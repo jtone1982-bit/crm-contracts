@@ -1,65 +1,94 @@
-import Image from "next/image";
+import { createClient } from '@/lib/supabase-server'
+import Link from 'next/link'
+import { PipelineStatus, PIPELINE_STATUSES } from '@/lib/types'
 
-export default function Home() {
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+
+  let query = supabase.from('candidates').select('*', { count: 'exact' })
+  if (profile.role === 'manager') {
+    query = query.eq('manager_id', profile.id)
+  }
+
+  const { data: candidates, count } = await query.order('created_at', { ascending: false })
+
+  const byStatus = PIPELINE_STATUSES.reduce((acc, status) => {
+    acc[status] = candidates?.filter((c) => c.status === status).length || 0
+    return acc
+  }, {} as Record<PipelineStatus, number>)
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold">Кандидаты</h1>
+        <div className="flex flex-wrap gap-2">
+          {profile.role === 'admin' && (
+            <>
+              <Link href="/admin/managers" className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
+                Менеджеры
+              </Link>
+              <a href="/api/export" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-500">
+                Экспорт Excel
+              </a>
+              <form action="/api/import" method="get">
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500">
+                  Импорт из Sheets
+                </button>
+              </form>
+            </>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {PIPELINE_STATUSES.map((status) => (
+          <Link
+            key={status}
+            href={`/candidates?status=${encodeURIComponent(status)}`}
+            className="bg-white border rounded-lg p-4 hover:shadow-md transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <div className="text-2xl font-bold text-blue-600">{byStatus[status] || 0}</div>
+            <div className="text-sm text-gray-600 mt-1">{status}</div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="bg-white border rounded-lg overflow-x-auto">
+        <table className="w-full min-w-[600px]">
+          <thead className="bg-gray-100 text-left text-sm">
+            <tr>
+              <th className="p-3">Телефон</th>
+              <th className="p-3">ФИО</th>
+              <th className="p-3">Статус</th>
+              <th className="p-3">Куда</th>
+              <th className="p-3">Дата создания</th>
+            </tr>
+          </thead>
+          <tbody className="text-sm">
+            {candidates?.map((c) => (
+              <tr key={c.id} className="border-t hover:bg-gray-50">
+                <td className="p-3">
+                  <Link href={`/candidates/${c.id}`} className="text-blue-600 hover:underline">
+                    {c.phone}
+                  </Link>
+                </td>
+                <td className="p-3">{c.full_name || '—'}</td>
+                <td className="p-3">{c.status}</td>
+                <td className="p-3">{c.city_to || '—'}</td>
+                <td className="p-3">{new Date(c.created_at).toLocaleDateString('ru-RU')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {(!candidates || candidates.length === 0) && (
+          <div className="p-8 text-center text-gray-500">Нет кандидатов</div>
+        )}
+      </div>
     </div>
-  );
+  )
 }
