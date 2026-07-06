@@ -1,33 +1,74 @@
-# Инструкция по развёртыванию CRM
+# Пошаговая инструкция по развёртыванию CRM
 
-## 1. Supabase
+## Шаг 1. Supabase (база данных, авторизация, файлы)
 
-1. Создай проект на https://supabase.com (бесплатно).
-2. В SQL Editor выполни скрипт из `supabase/schema.sql`.
-3. В Storage создай бакет `candidate-files` и разреши публичный доступ для чтения.
-4. Скопируй URL, anon key и service role key в `.env.local`.
+1. Зайди на https://supabase.com и создай новый проект.
+2. Скопируй данные из раздела **Project Settings → API**:
+   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `service_role secret` → `SUPABASE_SERVICE_ROLE_KEY`
 
-## 2. Google Sheets
+3. Открой **SQL Editor → New query**, вставь содержимое файла `supabase/schema.sql` и выполни.
 
-1. Создай сервисный аккаунт Google Cloud: https://console.cloud.google.com/iam-admin/serviceaccounts
-2. Скачай JSON-ключ.
-3. Предоставь доступ сервисному аккаунту на таблицу «Общий сток».
-4. Заполни `GOOGLE_CLIENT_EMAIL` и `GOOGLE_PRIVATE_KEY`.
-5. Убедись, что на листе «Лиды» есть столбец `B` — Телефон.
+4. Перейди в **Storage → New bucket**:
+   - Название: `candidate-files`
+   - Тип: `Public`
+   - Сохрани.
 
-## 3. Vercel
+## Шаг 2. Google Sheets (загрузка лидов)
 
-1. Залей код на GitHub.
-2. Импортируй репозиторий на https://vercel.com.
-3. Добавь все переменные окружения из `.env.example`.
-4. Разверни.
+1. Перейди в Google Cloud Console: https://console.cloud.google.com/iam-admin/serviceaccounts
+2. Создай сервисный аккаунт.
+3. Создай JSON-ключ и скачай файл.
+4. Открой файл ключа, скопируй:
+   - `client_email` → `GOOGLE_CLIENT_EMAIL`
+   - `private_key` → `GOOGLE_PRIVATE_KEY`
+5. Открой таблицу «Общий сток» и дай доступ сервисному аккаунту (кнопка «Поделиться» → вставь `client_email`).
+6. Убедись, что на листе есть столбец **B** с заголовком **Телефон**.
+7. Скопируй ID таблицы из URL: `https://docs.google.com/spreadsheets/d/ID/edit` → `GOOGLE_SHEETS_ID`.
 
-## 4. Первый админ
+## Шаг 3. GitHub
 
-После регистрации первого пользователя в Supabase вручную поменяй ему `role` на `admin` и `approved` на `true`.
+1. Создай новый приватный репозиторий.
+2. Залей код:
 
-## 5. Импорт лидов
+```bash
+cd /Users/a1/projects/crm-contracts
+git remote add origin https://github.com/ТВОЙ_НИК/crm-contracts.git
+git branch -M main
+git push -u origin main
+```
 
-Cron настроен в `vercel.json`: дважды в день в 7:00 и 12:00 UTC (10:00 и 15:00 по Москве).
+## Шаг 4. Vercel
 
-Ручной запуск: открой `https://your-site.vercel.app/api/import`.
+1. Зайди на https://vercel.com, импортируй репозиторий с GitHub.
+2. В настройках проекта добавь переменные окружения из `.env.example`.
+3. Нажми **Deploy**.
+4. После деплоя скопируй URL сайта и добавь в переменную `NEXT_PUBLIC_SITE_URL`.
+5. Пересобери проект (Redeploy).
+
+## Шаг 5. Первый администратор
+
+1. Открой сайт, зарегистрируй первого пользователя.
+2. В Supabase перейди в **Table Editor → profiles**.
+3. Найди свою запись, установи:
+   - `role` = `admin`
+   - `approved` = `true`
+   - `active` = `true`
+4. Войди снова — теперь у тебя права админа.
+
+## Шаг 6. Проверка импорта лидов
+
+Открой в браузере:
+
+```
+https://ТВОЙ_САЙТ.vercel.app/api/import
+```
+
+Должен вернуть JSON с количеством импортированных телефонов.
+
+Импорт запускается автоматически по расписанию (10:00 и 15:00 по Москве) благодаря `vercel.json`.
+
+## Готово
+
+Теперь менеджеры могут регистрироваться, админ их одобряет, а лидов автоматически раздаёт поровну.
