@@ -1,0 +1,15 @@
+name: Import leads from Google Sheets
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # 10:00 MSK (UTC+3)
+    - cron: '0 12 * * *'  # 15:00 MSK (UTC+3)
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger import endpoint
+        run: |
+          curl -sS -X GET "https://crm-contracts.vercel.app/api/import"
