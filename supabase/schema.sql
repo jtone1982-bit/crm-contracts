@@ -54,41 +54,50 @@ create table if not exists public.candidate_files (
   file_name text not null
 );
 
+-- Drop existing policies first
+drop policy if exists "Profiles: users read own" on public.profiles;
+drop policy if exists "Profiles: admin update" on public.profiles;
+drop policy if exists "Candidates: manager sees own" on public.candidates;
+drop policy if exists "Candidates: manager updates own" on public.candidates;
+drop policy if exists "Candidates: admin inserts" on public.candidates;
+drop policy if exists "Candidate files: manager sees own" on public.candidate_files;
+drop policy if exists "Candidate files: manager inserts own" on public.candidate_files;
+
 -- RLS policies
 -- Profiles: users can read own, admin can read all
-create policy if not exists "Profiles: users read own"
+create policy "Profiles: users read own"
   on public.profiles for select
   using (auth.uid() = id or exists (
     select 1 from public.profiles where id = auth.uid() and role = 'admin'
   ));
 
-create policy if not exists "Profiles: admin update"
+create policy "Profiles: admin update"
   on public.profiles for update
   using (exists (
     select 1 from public.profiles where id = auth.uid() and role = 'admin'
   ));
 
 -- Candidates: manager sees own, admin sees all
-create policy if not exists "Candidates: manager sees own"
+create policy "Candidates: manager sees own"
   on public.candidates for select
   using (auth.uid() = manager_id or exists (
     select 1 from public.profiles where id = auth.uid() and role = 'admin'
   ));
 
-create policy if not exists "Candidates: manager updates own"
+create policy "Candidates: manager updates own"
   on public.candidates for update
   using (auth.uid() = manager_id or exists (
     select 1 from public.profiles where id = auth.uid() and role = 'admin'
   ));
 
-create policy if not exists "Candidates: admin inserts"
+create policy "Candidates: admin inserts"
   on public.candidates for insert
   with check (exists (
     select 1 from public.profiles where id = auth.uid() and role = 'admin'
   ) or auth.uid() = manager_id);
 
 -- Candidate files: same rules
-create policy if not exists "Candidate files: manager sees own"
+create policy "Candidate files: manager sees own"
   on public.candidate_files for select
   using (exists (
     select 1 from public.candidates c
@@ -98,7 +107,7 @@ create policy if not exists "Candidate files: manager sees own"
     ))
   ));
 
-create policy if not exists "Candidate files: manager inserts own"
+create policy "Candidate files: manager inserts own"
   on public.candidate_files for insert
   with check (exists (
     select 1 from public.candidates c

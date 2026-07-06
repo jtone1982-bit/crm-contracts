@@ -1,8 +1,5 @@
 {
-  "crons": [
-    {
-      "path": "/api/import",
-      "schedule": "0 7,12 * * *"
-    }
-  ]
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
 }
