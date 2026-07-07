@@ -1,6 +1,29 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
+async function loadProfiles(supabase: Awaited<ReturnType<typeof createClient>>, messages: any[]) {
+  const userIds = new Set<string>()
+  messages.forEach((m) => {
+    if (m.sender_id) userIds.add(m.sender_id)
+    if (m.receiver_id) userIds.add(m.receiver_id)
+  })
+
+  if (userIds.size === 0) return new Map<string, string | null>()
+
+  const ids = Array.from(userIds)
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', ids)
+
+  if (error) {
+    console.error('[messages] loadProfiles error', error.message)
+    return new Map<string, string | null>()
+  }
+
+  return new Map((profiles || []).map((p: any) => [p.id, p.full_name]))
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const general = searchParams.get('general') === 'true'
@@ -16,14 +39,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
-  let query = supabase
-    .from('messages')
-    .select(`
-      *,
-      sender:profiles!sender_id(id, full_name),
-      receiver:profiles!receiver_id(id, full_name)
-    `)
-    .order('created_at', { ascending: true })
+  let query = supabase.from('messages').select('*').order('created_at', { ascending: true })
 
   if (general) {
     query = query.eq('is_general', true)
@@ -44,7 +60,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Не удалось загрузить сообщения' }, { status: 500 })
   }
 
-  return NextResponse.json({ messages: data || [] })
+  const messages = data || []
+  const profileMap = await loadProfiles(supabase, messages)
+
+  const enriched = messages.map((m) => ({
+    ...m,
+    sender: m.sender_id ? { id: m.sender_id, full_name: profileMap.get(m.sender_id) || null } : null,
+    receiver: m.receiver_id ? { id: m.receiver_id, full_name: profileMap.get(m.receiver_id) || null } : null,
+  }))
+
+  return NextResponse.json({ messages: enriched })
 }
 
 export async function POST(request: Request) {
@@ -70,16 +95,19 @@ export async function POST(request: Request) {
     receiver_id: isGeneral ? null : receiverId || null,
     content: content.trim(),
     is_general: !!isGeneral,
-  }).select(`
-    *,
-    sender:profiles!sender_id(id, full_name),
-    receiver:profiles!receiver_id(id, full_name)
-  `).single()
+  }).select().single()
 
   if (error) {
     console.error('[messages] insert error', error.message)
     return NextResponse.json({ error: 'Не удалось отправить сообщение' }, { status: 500 })
   }
 
-  return NextResponse.json({ message: data })
+  const profileMap = await loadProfiles(supabase, [data])
+  const enriched = {
+    ...data,
+    sender: data.sender_id ? { id: data.sender_id, full_name: profileMap.get(data.sender_id) || null } : null,
+    receiver: data.receiver_id ? { id: data.receiver_id, full_name: profileMap.get(data.receiver_id) || null } : null,
+  }
+
+  return NextResponse.json({ message: enriched })
 }
