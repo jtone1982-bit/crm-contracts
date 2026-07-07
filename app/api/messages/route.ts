@@ -117,17 +117,18 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { content, receiverId, isGeneral } = body
+  const { content, receiverId, isGeneral, attachmentUrl } = body
 
-  if (!content?.trim()) {
+  if (!content?.trim() && !attachmentUrl?.trim()) {
     return NextResponse.json({ error: 'Сообщение не может быть пустым' }, { status: 400 })
   }
 
   const { data, error } = await supabase.from('messages').insert({
     sender_id: user.id,
     receiver_id: isGeneral ? null : receiverId || null,
-    content: content.trim(),
+    content: content?.trim() || 'Голосовое сообщение',
     is_general: !!isGeneral,
+    attachment_url: attachmentUrl?.trim() || null,
   }).select().single()
 
   if (error) {

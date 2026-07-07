@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import EmojiPickerButton from '@/components/EmojiPickerButton'
 import MessageContent from '@/components/MessageContent'
+import VoiceRecorder from '@/components/VoiceRecorder'
 import { formatActivityTime, formatRelativeTime } from '@/lib/datetime'
 
 interface Message {
@@ -11,6 +12,7 @@ interface Message {
   sender_id: string
   content: string
   created_at: string
+  attachment_url?: string | null
   sender: { id: string; full_name: string | null; last_active_at?: string | null } | null
   receiver: { id: string; full_name: string | null; last_active_at?: string | null } | null
 }
@@ -59,20 +61,34 @@ export default function GeneralChatPage() {
     }, 400)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!text.trim()) return
+  async function sendMessage(content: string, attachmentUrl?: string) {
+    if (!content?.trim() && !attachmentUrl?.trim()) return
 
     const res = await fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text, isGeneral: true }),
+      body: JSON.stringify({ content, isGeneral: true, attachmentUrl }),
     })
 
     if (res.ok) {
       setText('')
       await loadMessages()
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await sendMessage(text)
+  }
+
+  function renderAttachment(m: Message) {
+    if (!m.attachment_url) return null
+    return (
+      <audio controls className="mt-2 max-w-full">
+        <source src={m.attachment_url} />
+        Ваш браузер не поддерживает аудио.
+      </audio>
+    )
   }
 
   return (
@@ -114,6 +130,7 @@ export default function GeneralChatPage() {
               <div className="text-sm">
                 <MessageContent content={m.content} />
               </div>
+              {renderAttachment(m)}
               <div className="text-xs text-gray-500 mt-1">
                 {new Date(m.created_at).toLocaleTimeString('ru-RU')}
               </div>
@@ -132,6 +149,7 @@ export default function GeneralChatPage() {
           className="flex-1 border rounded-lg p-2"
         />
         <EmojiPickerButton onEmojiClick={(emoji) => setText((t) => t + emoji)} />
+        <VoiceRecorder onRecorded={sendMessage} />
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500"

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import EmojiPickerButton from '@/components/EmojiPickerButton'
 import MessageContent from '@/components/MessageContent'
+import VoiceRecorder from '@/components/VoiceRecorder'
 import { formatActivityTime, formatRelativeTime } from '@/lib/datetime'
 
 interface Message {
@@ -12,6 +13,7 @@ interface Message {
   sender_id: string
   content: string
   created_at: string
+  attachment_url?: string | null
   sender: { id: string; full_name: string | null; last_active_at?: string | null } | null
   receiver: { id: string; full_name: string | null; last_active_at?: string | null } | null
 }
@@ -40,7 +42,6 @@ export default function PrivateChatPage() {
     fetch('/api/profile')
       .then((r) => r.json())
       .then((data) => setCurrentUserId(data.user_metadata?.sub || ''))
-    loadReceiver()
     loadMessages()
     const interval = setInterval(() => loadMessages(search), 5000)
 
@@ -52,17 +53,13 @@ export default function PrivateChatPage() {
   }, [receiverId, search])
 
   useEffect(() => {
+    const receiver = messages.find((m) => m.sender_id === receiverId)?.sender
+    if (receiver?.full_name) setReceiverName(receiver.full_name)
+  }, [messages, receiverId])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
-  async function loadReceiver() {
-    const res = await fetch(`/api/admin/managers-list`)
-    const data = await res.json()
-    const user = data.profiles?.find((p: any) => p.id === receiverId)
-    if (user) {
-      setReceiverName(user.full_name || user.email)
-    }
-  }
 
   function handleSearchChange(value: string) {
     setSearch(value)
@@ -72,20 +69,34 @@ export default function PrivateChatPage() {
     }, 400)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!text.trim()) return
+  async function sendMessage(content: string, attachmentUrl?: string) {
+    if (!content?.trim() && !attachmentUrl?.trim()) return
 
     const res = await fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text, receiverId }),
+      body: JSON.stringify({ content, receiverId, attachmentUrl }),
     })
 
     if (res.ok) {
       setText('')
       await loadMessages()
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await sendMessage(text)
+  }
+
+  function renderAttachment(m: Message) {
+    if (!m.attachment_url) return null
+    return (
+      <audio controls className="mt-2 max-w-full">
+        <source src={m.attachment_url} />
+        Ваш браузер не поддерживает аудио.
+      </audio>
+    )
   }
 
   return (
@@ -127,13 +138,13 @@ export default function PrivateChatPage() {
               <div className="text-sm">
                 <MessageContent content={m.content} />
               </div>
+              {renderAttachment(m)}
               <div className="text-xs text-gray-500 mt-1">
                 {new Date(m.created_at).toLocaleTimeString('ru-RU')}
               </div>
             </div>
           </div>
         ))}
-        {messages.length === 0 && <div className="text-sm text-gray-400">Нет сообщений</div>}
         <div ref={bottomRef} />
       </div>
 
@@ -146,6 +157,7 @@ export default function PrivateChatPage() {
           className="flex-1 border rounded-lg p-2"
         />
         <EmojiPickerButton onEmojiClick={(emoji) => setText((t) => t + emoji)} />
+        <VoiceRecorder onRecorded={sendMessage} />
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500"
