@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,7 +22,7 @@ export default function LoginPage() {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, fullName }),
         credentials: 'include',
       })
 
@@ -68,6 +69,19 @@ export default function LoginPage() {
               required
             />
           </div>
+
+          {isSignUp && (
+            <div>
+              <label className="block text-sm font-medium mb-1">ФИО</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+                required={isSignUp}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium mb-1">Пароль</label>
