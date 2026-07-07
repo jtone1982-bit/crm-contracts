@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Разрешены только аудио файлы' }, { status: 400 })
   }
 
-  const ext = contentType === 'audio/webm' ? 'webm' : contentType.split('/')[1] || 'webm'
+  const ext = contentType === 'audio/wav' ? 'wav' : contentType === 'audio/webm' ? 'webm' : contentType.split('/')[1] || 'webm'
   const path = `${user.id}/${randomUUID()}.${ext}`
 
   const adminClient = createAdminClient()
