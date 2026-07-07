@@ -27,6 +27,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Link>
         </div>
         <div className="flex items-center gap-4 text-sm">
+          <Link href="/messages" className="text-gray-700 hover:text-blue-600">
+            Сообщения
+          </Link>
           <Link href="/profile" className="text-gray-700 hover:text-blue-600">
             Профиль
           </Link>

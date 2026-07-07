@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [socials, setSocials] = useState<SocialLink[]>([{ platform: '', url: '' }])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [userId, setUserId] = useState('')
 
   useEffect(() => {
     fetch('/api/profile')
@@ -29,6 +30,7 @@ export default function ProfilePage() {
         setAdditionalEmail(meta.additional_email || '')
         setAddress(meta.address || '')
         setAvatarUrl(meta.avatar_url || '')
+        setUserId(data.user_metadata?.sub || '')
         setSocials(
           Array.isArray(meta.social_links) && meta.social_links.length > 0
             ? meta.social_links
@@ -182,6 +184,9 @@ export default function ProfilePage() {
           {loading ? 'Сохранение...' : 'Сохранить'}
         </button>
       </form>
+      <Link href={`/messages/${userId}`} className="w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-center block">
+        Написать личное сообщение
+      </Link>
     </div>
   )
 }
