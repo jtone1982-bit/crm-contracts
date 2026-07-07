@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useNotifications } from '@/components/NotificationProvider'
 
@@ -24,21 +24,30 @@ interface Message {
 function useUnreadCounts() {
   const [counts, setCounts] = useState({ general: 0, private: 0, total: 0 })
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch('/api/messages/unread')
-        const data = await res.json()
-        setCounts(data)
-      } catch (e) {
-        console.error(e)
-      }
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/messages/unread')
+      const data = await res.json()
+      setCounts(data)
+    } catch (e) {
+      console.error(e)
     }
+  }, [])
 
+  useEffect(() => {
     load()
     const interval = setInterval(load, 5000)
-    return () => clearInterval(interval)
-  }, [])
+
+    function handleRefresh() {
+      load()
+    }
+
+    window.addEventListener('refresh-unread', handleRefresh)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('refresh-unread', handleRefresh)
+    }
+  }, [load])
 
   return counts
 }

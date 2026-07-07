@@ -38,7 +38,9 @@ export default function GeneralChatPage() {
     loadMessages()
     const interval = setInterval(() => loadMessages(search), 5000)
 
-    fetch('/api/messages/unread?general=true', { method: 'POST' }).catch(() => {})
+    fetch('/api/messages/unread?general=true', { method: 'POST' })
+      .then(() => window.dispatchEvent(new CustomEvent('refresh-unread')))
+      .catch(() => {})
 
     return () => clearInterval(interval)
   }, [search])
