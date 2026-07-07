@@ -37,6 +37,9 @@ export default async function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold">Кандидаты</h1>
         <div className="flex flex-wrap gap-2">
+          <Link href="/profile" className="px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
+            Профиль
+          </Link>
           {profile.role === 'admin' && (
             <>
               <Link href="/admin/managers" className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
