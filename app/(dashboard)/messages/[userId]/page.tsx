@@ -43,7 +43,7 @@ export default function PrivateChatPage() {
     loadMessages()
     const interval = setInterval(() => loadMessages(search), 5000)
 
-    fetch('/api/messages/unread', { method: 'POST' }).catch(() => {})
+    fetch(`/api/messages/unread?receiverId=${receiverId}`, { method: 'POST' }).catch(() => {})
 
     return () => clearInterval(interval)
   }, [receiverId, search])

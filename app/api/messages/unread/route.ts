@@ -30,7 +30,11 @@ export async function GET() {
   return NextResponse.json({ general, private: private_, total: general + private_ })
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const general = searchParams.get('general') === 'true'
+  const receiverId = searchParams.get('receiverId')
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -41,12 +45,21 @@ export async function POST() {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
-  const { error } = await supabase
+  let query = supabase
     .from('messages')
     .update({ read_at: new Date().toISOString() })
     .neq('sender_id', user.id)
     .is('read_at', null)
-    .or(`is_general.eq.true,receiver_id.eq.${user.id}`)
+
+  if (general) {
+    query = query.eq('is_general', true)
+  } else if (receiverId) {
+    query = query.eq('is_general', false).eq('sender_id', receiverId)
+  } else {
+    query = query.or(`is_general.eq.true,receiver_id.eq.${user.id}`)
+  }
+
+  const { error } = await query
 
   if (error) {
     console.error('[messages/unread] mark read error', error.message)
