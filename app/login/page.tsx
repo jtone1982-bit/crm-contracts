@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -47,68 +48,82 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-2">CRM Контракты</h1>
-        <p className="text-center text-gray-500 text-sm mb-6">
-          {isSignUp ? 'Регистрация нового менеджера' : 'Вход в систему'}
-        </p>
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      <nav className="bg-white border-b px-4 py-3 flex items-center justify-between">
+        <Link href="/" className="font-bold text-lg hover:text-blue-600">
+          CRM Контракты
+        </Link>
+        <Link
+          href="/messages"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500"
+        >
+          Чат
+        </Link>
+      </nav>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded text-sm">{error}</div>
-        )}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md w-full max-w-md">
+          <h1 className="text-2xl font-bold text-center mb-2">CRM Контракты</h1>
+          <p className="text-center text-gray-500 text-sm mb-6">
+            {isSignUp ? 'Регистрация нового менеджера' : 'Вход в систему'}
+          </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
-              required
-            />
-          </div>
-
-          {isSignUp && (
-            <div>
-              <label className="block text-sm font-medium mb-1">ФИО</label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-                required={isSignUp}
-              />
-            </div>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded text-sm">{error}</div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Пароль</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+                required
+              />
+            </div>
+
+            {isSignUp && (
+              <div>
+                <label className="block text-sm font-medium mb-1">ФИО</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                  required={isSignUp}
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Пароль</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-500 disabled:opacity-50"
+            >
+              {loading ? 'Загрузка...' : isSignUp ? 'Зарегистрироваться' : 'Войти'}
+            </button>
+          </form>
 
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-500 disabled:opacity-50"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="w-full mt-4 text-sm text-blue-600 hover:underline"
           >
-            {loading ? 'Загрузка...' : isSignUp ? 'Зарегистрироваться' : 'Войти'}
+            {isSignUp ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
           </button>
-        </form>
-
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="w-full mt-4 text-sm text-blue-600 hover:underline"
-        >
-          {isSignUp ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
-        </button>
+        </div>
       </div>
     </div>
   )
