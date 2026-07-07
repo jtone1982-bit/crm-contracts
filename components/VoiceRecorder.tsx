@@ -24,8 +24,8 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
     setIos(isIOS())
   }, [])
 
-  const uploadBlob = useCallback(async (blob: Blob) => {
-    const mimeType = blob.type || 'audio/webm'
+  const uploadBlob = useCallback(async (blob: Blob, fallbackType?: string) => {
+    const mimeType = blob.type || fallbackType || 'audio/mpeg'
     if (blob.size === 0) return
 
     try {
@@ -113,7 +113,7 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    await uploadBlob(file)
+    await uploadBlob(file, file.type)
     e.target.value = ''
   }
 
@@ -129,7 +129,6 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
         <input
           type="file"
           accept="audio/*"
-          capture="environment"
           className="hidden"
           onChange={handleFileChange}
         />
