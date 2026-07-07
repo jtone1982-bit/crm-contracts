@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
+import RecordRTC, { StereoAudioRecorder } from 'recordrtc'
 
 interface VoiceRecorderProps {
   onRecorded: (content: string, attachmentUrl: string) => void
@@ -23,13 +24,8 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef<number>(0)
-
-  // Web Audio API refs
-  const audioContextRef = useRef<AudioContext | null>(null)
+  const recordRef = useRef<RecordRTC | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
-  const processorRef = useRef<ScriptProcessorNode | null>(null)
-  const buffersRef = useRef<Float32Array[]>([])
 
   const uploadBlob = useCallback(async (blob: Blob, fallbackType?: string) => {
     const mimeType = blob.type || fallbackType || 'audio/mpeg'
@@ -70,17 +66,13 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
     }
   }, [onRecorded])
 
-  const stopRecording = useCallback(async () => {
+  const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop()
     }
-    if (processorRef.current && audioContextRef.current) {
-      processorRef.current.disconnect()
-      sourceRef.current?.disconnect()
-      await audioContextRef.current.close()
-      audioContextRef.current = null
-      sourceRef.current = null
-      processorRef.current = null
+    if (recordRef.current) {
+      recordRef.current.stopRecording(() => {})
+      recordRef.current = null
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop())
@@ -131,127 +123,65 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
     }
   }, [stopRecording, uploadBlob])
 
-  function floatTo16BitPCM(input: Float32Array) {
-    const output = new DataView(new ArrayBuffer(input.length * 2))
-    for (let i = 0; i < input.length; i++) {
-      const s = Math.max(-1, Math.min(1, input[i]))
-      output.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true)
-    }
-    return output.buffer
-  }
-
-  function writeWAV(sampleRate: number, channels: number, samples: Float32Array) {
-    const buffer = new ArrayBuffer(44 + samples.length * 2)
-    const view = new DataView(buffer)
-
-    const writeString = (offset: number, string: string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i))
-      }
-    }
-
-    writeString(0, 'RIFF')
-    view.setUint32(4, 36 + samples.length * 2, true)
-    writeString(8, 'WAVE')
-    writeString(12, 'fmt ')
-    view.setUint32(16, 16, true)
-    view.setUint16(20, 1, true)
-    view.setUint16(22, channels, true)
-    view.setUint32(24, sampleRate, true)
-    view.setUint32(28, sampleRate * channels * 2, true)
-    view.setUint16(32, channels * 2, true)
-    view.setUint16(34, 16, true)
-    writeString(36, 'data')
-    view.setUint32(40, samples.length * 2, true)
-
-    const pcm = floatTo16BitPCM(samples)
-    const pcmView = new Uint8Array(pcm)
-    const dataView = new Uint8Array(buffer, 44)
-    dataView.set(pcmView)
-
-    return new Blob([buffer], { type: 'audio/wav' })
-  }
-
-  const startWebAudio = useCallback(async () => {
+  const startRecordRTC = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
 
-      if (!audioContextRef.current) {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-        audioContextRef.current = new AudioContextClass()
-      }
-      const audioContext = audioContextRef.current
+      const recorder = new RecordRTC(stream, {
+        type: 'audio',
+        mimeType: 'audio/wav',
+        recorderType: StereoAudioRecorder,
+        numberOfAudioChannels: 1,
+        desiredSampRate: 16000,
+      })
 
-      await audioContext.resume()
-
-      const source = audioContext.createMediaStreamSource(stream)
-      sourceRef.current = source
-
-      const processor = audioContext.createScriptProcessor(4096, 1, 1)
-      processorRef.current = processor
-      buffersRef.current = []
-
-      processor.onaudioprocess = (e) => {
-        const data = e.inputBuffer.getChannelData(0)
-        buffersRef.current.push(new Float32Array(data))
-      }
-
-      source.connect(processor)
-      // Processor output not connected — we only read input samples
-
+      recordRef.current = recorder
       startTimeRef.current = Date.now()
       setDuration(0)
       setRecording(true)
+
+      recorder.startRecording()
 
       timerRef.current = setInterval(() => {
         setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000))
       }, 1000)
     } catch (e) {
-      console.error('[voice recorder] web audio error', e)
+      console.error('[voice recorder] RecordRTC error', e)
       alert('Не удалось получить доступ к микрофону')
       setRecording(false)
     }
   }, [])
 
-  const stopWebAudio = useCallback(async () => {
-    await stopRecording()
+  const stopRecordRTC = useCallback(() => {
+    if (!recordRef.current) return
 
-    if (buffersRef.current.length === 0) return
-
-    const length = buffersRef.current.reduce((acc, b) => acc + b.length, 0)
-    const samples = new Float32Array(length)
-    let offset = 0
-    for (const b of buffersRef.current) {
-      samples.set(b, offset)
-      offset += b.length
-    }
-
-    const sampleRate = audioContextRef.current?.sampleRate || 44100
-    const blob = writeWAV(sampleRate, 1, samples)
-    buffersRef.current = []
-    await uploadBlob(blob, 'audio/wav')
+    recordRef.current.stopRecording(async () => {
+      const blob = recordRef.current?.getBlob()
+      stopRecording()
+      if (blob) await uploadBlob(blob, 'audio/wav')
+    })
   }, [stopRecording, uploadBlob])
 
   const startRecording = useCallback(async () => {
     if (supportsMediaRecorder()) {
       await startMediaRecorder()
     } else {
-      await startWebAudio()
+      await startRecordRTC()
     }
-  }, [startMediaRecorder, startWebAudio])
+  }, [startMediaRecorder, startRecordRTC])
 
   const toggleRecording = useCallback(async () => {
     if (recording) {
       if (supportsMediaRecorder()) {
         mediaRecorderRef.current?.stop()
       } else {
-        await stopWebAudio()
+        stopRecordRTC()
       }
     } else {
       await startRecording()
     }
-  }, [recording, startRecording, stopWebAudio])
+  }, [recording, startRecording, stopRecordRTC])
 
   const formatDuration = (s: number) => {
     const m = Math.floor(s / 60)
