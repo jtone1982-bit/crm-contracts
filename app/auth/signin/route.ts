@@ -10,33 +10,14 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-  if (error || !data.user) {
-    console.error('[signin] error', error?.message || 'no user')
+  if (error || !data.user || !data.session) {
+    console.error('[signin] error', error?.message || 'no session')
     return NextResponse.json({ error: error?.message || 'Auth failed' }, { status: 400 })
   }
 
-  if (!data.session) {
-    console.error('[signin] no session')
-    return NextResponse.json({ error: 'No session' }, { status: 400 })
-  }
-
+  // Let @supabase/ssr set its own chunked cookies on the response via setAll
+  // We trigger a no-op set to flush session cookies to the cookie store
   const cookieStore = await cookies()
-  const maxAge = 60 * 60 * 24 * 365
-
-  cookieStore.set('sb-access-token', data.session.access_token, {
-    path: '/',
-    httpOnly: false,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge,
-  })
-  cookieStore.set('sb-refresh-token', data.session.refresh_token, {
-    path: '/',
-    httpOnly: false,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge,
-  })
 
   console.log('[signin] success', data.user.id)
   return NextResponse.json({ success: true })
