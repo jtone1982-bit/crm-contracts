@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import EmojiPickerButton from '@/components/EmojiPickerButton'
 
 interface Message {
   id: string
@@ -112,6 +113,7 @@ export default function PrivateChatPage() {
           placeholder="Написать сообщение..."
           className="flex-1 border rounded-lg p-2"
         />
+        <EmojiPickerButton onEmojiClick={(emoji) => setText((t) => t + emoji)} />
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500"
