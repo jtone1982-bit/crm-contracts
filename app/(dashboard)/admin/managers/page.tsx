@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase-server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
@@ -8,13 +9,51 @@ export default async function ManagersPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+  if (!user) {
+    redirect('/login')
+  }
 
-  if (profile.role !== 'admin') {
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+
+  if (profile?.role !== 'admin') {
     redirect('/')
   }
 
   const { data: managers } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
+
+  async function addManager(formData: FormData) {
+    'use server'
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const fullName = formData.get('fullName') as string
+
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { data: authData, error: authError } = await serviceSupabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName },
+    })
+
+    if (authError || !authData.user) {
+      throw new Error(authError?.message || 'Failed to create user')
+    }
+
+    await serviceSupabase.from('profiles').upsert({
+      id: authData.user.id,
+      email,
+      full_name: fullName,
+      role: 'manager',
+      approved: true,
+      active: true,
+    })
+
+    revalidatePath('/admin/managers')
+  }
 
   async function approve(formData: FormData) {
     'use server'
@@ -33,6 +72,25 @@ export default async function ManagersPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Менеджеры</h1>
+
+      <form action={addManager} className="bg-white border rounded-lg p-4 space-y-4 max-w-md">
+        <h2 className="font-semibold">Добавить менеджера</h2>
+        <div>
+          <label className="block text-sm font-medium mb-1">Email</label>
+          <input name="email" type="email" required className="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Пароль</label>
+          <input name="password" type="password" required minLength={6} className="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">ФИО</label>
+          <input name="fullName" type="text" required className="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <button type="submit" className="w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-500">
+          Добавить
+        </button>
+      </form>
 
       <div className="bg-white border rounded-lg overflow-x-auto">
         <table className="w-full min-w-[500px]">
