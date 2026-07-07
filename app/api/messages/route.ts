@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const general = searchParams.get('general') === 'true'
   const receiverId = searchParams.get('receiverId')
+  const q = searchParams.get('q')?.trim().toLowerCase()
 
   const supabase = await createClient()
   const {
@@ -68,6 +69,15 @@ export async function GET(request: Request) {
     sender: m.sender_id ? { id: m.sender_id, full_name: profileMap.get(m.sender_id) || null } : null,
     receiver: m.receiver_id ? { id: m.receiver_id, full_name: profileMap.get(m.receiver_id) || null } : null,
   }))
+
+  if (q) {
+    const filtered = enriched.filter((m) => {
+      const senderName = m.sender?.full_name?.toLowerCase() || ''
+      const content = m.content.toLowerCase()
+      return content.includes(q) || senderName.includes(q)
+    })
+    return NextResponse.json({ messages: filtered })
+  }
 
   return NextResponse.json({ messages: enriched })
 }

@@ -20,9 +20,20 @@ export default function PrivateChatPage() {
   const receiverId = params.userId as string
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
+  const [search, setSearch] = useState('')
   const [currentUserId, setCurrentUserId] = useState('')
   const [receiverName, setReceiverName] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const loadMessages = async (q = '') => {
+    const params = new URLSearchParams()
+    params.set('receiverId', receiverId)
+    if (q.trim()) params.set('q', q.trim())
+    const res = await fetch(`/api/messages?${params.toString()}`)
+    const data = await res.json()
+    setMessages(data.messages || [])
+  }
 
   useEffect(() => {
     fetch('/api/profile')
@@ -30,12 +41,12 @@ export default function PrivateChatPage() {
       .then((data) => setCurrentUserId(data.user_metadata?.sub || ''))
     loadReceiver()
     loadMessages()
-    const interval = setInterval(loadMessages, 5000)
+    const interval = setInterval(() => loadMessages(search), 5000)
 
     fetch('/api/messages/unread', { method: 'POST' }).catch(() => {})
 
     return () => clearInterval(interval)
-  }, [receiverId])
+  }, [receiverId, search])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -50,10 +61,12 @@ export default function PrivateChatPage() {
     }
   }
 
-  async function loadMessages() {
-    const res = await fetch(`/api/messages?receiverId=${receiverId}`)
-    const data = await res.json()
-    setMessages(data.messages || [])
+  function handleSearchChange(value: string) {
+    setSearch(value)
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    searchTimeout.current = setTimeout(() => {
+      loadMessages(value)
+    }, 400)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -78,6 +91,14 @@ export default function PrivateChatPage() {
         <h1 className="text-2xl font-bold truncate">{receiverName || 'Личные сообщения'}</h1>
         <Link href="/messages" className="text-blue-600 hover:underline">← Назад</Link>
       </div>
+
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => handleSearchChange(e.target.value)}
+        placeholder="Поиск по сообщениям..."
+        className="w-full border rounded-lg p-2"
+      />
 
       <div className="flex-1 bg-white border rounded-lg p-4 overflow-y-auto space-y-3">
         {messages.map((m) => (

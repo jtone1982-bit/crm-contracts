@@ -17,30 +17,43 @@ interface Message {
 export default function GeneralChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
+  const [search, setSearch] = useState('')
   const [currentUserId, setCurrentUserId] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const loadMessages = async (q = '') => {
+    const params = new URLSearchParams()
+    params.set('general', 'true')
+    if (q.trim()) params.set('q', q.trim())
+    const res = await fetch(`/api/messages?${params.toString()}`)
+    const data = await res.json()
+    setMessages(data.messages || [])
+  }
 
   useEffect(() => {
     fetch('/api/profile')
       .then((r) => r.json())
       .then((data) => setCurrentUserId(data.user_metadata?.sub || ''))
     loadMessages()
-    const interval = setInterval(loadMessages, 5000)
+    const interval = setInterval(() => loadMessages(search), 5000)
 
     fetch('/api/messages/unread', { method: 'POST' }).catch(() => {})
 
     return () => clearInterval(interval)
-  }, [])
+  }, [search])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     localStorage.setItem('general_chat_last_read', new Date().toISOString())
   }, [messages])
 
-  async function loadMessages() {
-    const res = await fetch('/api/messages?general=true')
-    const data = await res.json()
-    setMessages(data.messages || [])
+  function handleSearchChange(value: string) {
+    setSearch(value)
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    searchTimeout.current = setTimeout(() => {
+      loadMessages(value)
+    }, 400)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -65,6 +78,14 @@ export default function GeneralChatPage() {
         <h1 className="text-2xl font-bold">Общий чат</h1>
         <Link href="/messages" className="text-blue-600 hover:underline">← Назад</Link>
       </div>
+
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => handleSearchChange(e.target.value)}
+        placeholder="Поиск по сообщениям или имени..."
+        className="w-full border rounded-lg p-2"
+      />
 
       <div className="flex-1 bg-white border rounded-lg p-4 overflow-y-auto space-y-3">
         {messages.map((m) => (
