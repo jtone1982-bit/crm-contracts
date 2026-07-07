@@ -13,11 +13,27 @@ export async function GET() {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
-  const { data, error } = await supabase
+  let data: any
+  let error: any
+
+  const firstQuery = await (supabase
     .from('profiles')
     .select('id, email, full_name, last_active_at')
     .neq('id', user.id)
-    .order('full_name', { ascending: true })
+    .order('full_name', { ascending: true }) as any)
+
+  data = firstQuery.data
+  error = firstQuery.error
+
+  if (error?.message?.includes('last_active_at')) {
+    const fallback = await (supabase
+      .from('profiles')
+      .select('id, email, full_name')
+      .neq('id', user.id)
+      .order('full_name', { ascending: true }) as any)
+    data = fallback.data
+    error = fallback.error
+  }
 
   if (error) {
     console.error('[managers-list] error', error.message)
@@ -37,7 +53,7 @@ export async function GET() {
 
   const signInMap = new Map((userList?.users || []).map((u) => [u.id, u.last_sign_in_at]))
 
-  const enriched = (data || []).map((p) => ({
+  const enriched = (data || []).map((p: any) => ({
     ...p,
     last_sign_in_at: signInMap.get(p.id) || null,
   }))

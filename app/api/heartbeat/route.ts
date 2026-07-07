@@ -12,13 +12,17 @@ export async function POST() {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
-  const { error } = await supabase
+  const update = await supabase
     .from('profiles')
     .update({ last_active_at: new Date().toISOString() })
     .eq('id', user.id)
 
-  if (error) {
-    console.error('[heartbeat] error', error.message)
+  if (update.error?.message?.includes('last_active_at')) {
+    return NextResponse.json({ success: true, skipped: true })
+  }
+
+  if (update.error) {
+    console.error('[heartbeat] error', update.error.message)
     return NextResponse.json({ error: 'Не удалось обновить активность' }, { status: 500 })
   }
 
