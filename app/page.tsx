@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { PipelineStatus, PIPELINE_STATUSES } from '@/lib/types'
 import ExcelImportButton from '@/components/ExcelImportButton'
+import UnreadBadge from '@/components/UnreadBadge'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -45,8 +46,9 @@ export default async function DashboardPage() {
               <Link href="/admin/managers" className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
                 Менеджеры
               </Link>
-              <Link href="/messages" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500">
+              <Link href="/messages" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 flex items-center">
                 Чат
+                <UnreadBadge />
               </Link>
               <a href="/api/export" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-500">
                 Экспорт Excel

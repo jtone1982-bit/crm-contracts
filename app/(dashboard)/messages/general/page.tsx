@@ -24,6 +24,9 @@ export default function GeneralChatPage() {
       .then((data) => setCurrentUserId(data.user_metadata?.sub || ''))
     loadMessages()
     const interval = setInterval(loadMessages, 5000)
+
+    fetch('/api/messages/unread', { method: 'POST' }).catch(() => {})
+
     return () => clearInterval(interval)
   }, [])
 

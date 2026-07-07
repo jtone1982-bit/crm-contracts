@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 interface Profile {
@@ -20,20 +20,48 @@ interface Message {
   receiver: { id: string; full_name: string | null } | null
 }
 
-export default function MessagesPage() {
-  const [profiles, setProfiles] = useState<Profile[]>([])
-  const [generalUnread, setGeneralUnread] = useState(0)
-  const [loading, setLoading] = useState(true)
+function useUnreadCounts() {
+  const [counts, setCounts] = useState({ general: 0, private: 0, total: 0 })
 
   useEffect(() => {
-    fetch('/api/messages?general=true').then((r) => r.json()).then((data) => {
-      const lastRead = localStorage.getItem('general_chat_last_read')
-      const messages = data.messages || []
-      const unread = lastRead
-        ? messages.filter((m: Message) => new Date(m.created_at) > new Date(lastRead)).length
-        : messages.length
-      setGeneralUnread(unread)
-    })
+    async function load() {
+      try {
+        const res = await fetch('/api/messages/unread')
+        const data = await res.json()
+        setCounts(data)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    load()
+    const interval = setInterval(load, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return counts
+}
+
+export default function MessagesPage() {
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [lastMessages, setLastMessages] = useState<Record<string, Message>>({})
+  const unread = useUnreadCounts()
+
+  useEffect(() => {
+    fetch('/api/messages')
+      .then((r) => r.json())
+      .then((data) => {
+        const map: Record<string, Message> = {}
+        ;(data.messages || []).forEach((m: Message) => {
+          const otherId = m.sender_id === m.receiver_id ? m.receiver_id : (m.receiver_id || m.sender_id)
+          if (!otherId) return
+          if (!map[otherId] || new Date(m.created_at) > new Date(map[otherId].created_at)) {
+            map[otherId] = m
+          }
+        })
+        setLastMessages(map)
+      })
 
     fetch('/api/admin/managers-list')
       .then((r) => r.json())
@@ -74,8 +102,8 @@ export default function MessagesPage() {
               <div className="font-medium">Общий чат</div>
               <div className="text-sm text-gray-500">Все пользователи</div>
             </div>
-            {generalUnread > 0 && (
-              <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">{generalUnread}</span>
+            {unread.general > 0 && (
+              <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">{unread.general}</span>
             )}
           </div>
         </Link>
@@ -89,8 +117,25 @@ export default function MessagesPage() {
               href={`/messages/${p.id}`}
               className="block bg-white border rounded-lg p-4 hover:shadow-md transition"
             >
-              <div className="font-medium">{p.full_name || p.email}</div>
-              {p.full_name && <div className="text-sm text-gray-500">{p.email}</div>}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{p.full_name || p.email}</div>
+                  {p.full_name && <div className="text-sm text-gray-500">{p.email}</div>}
+                  {lastMessages[p.id]?.content && (
+                    <div className="text-xs text-gray-400 mt-1 truncate max-w-[200px] sm:max-w-sm">
+                      {lastMessages[p.id].sender_id === p.id ? '' : 'Вы: '}
+                      {lastMessages[p.id].content}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">
+                    {lastMessages[p.id]?.created_at
+                      ? new Date(lastMessages[p.id].created_at).toLocaleDateString('ru-RU')
+                      : ''}
+                  </span>
+                </div>
+              </div>
             </Link>
           ))}
           {!loading && profiles.length === 0 && (
