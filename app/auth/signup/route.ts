@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 export async function POST(request: Request) {
   const { email, password, fullName } = await request.json()
 
+  console.log('[signup] attempt', email)
+
   const serviceSupabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -15,15 +17,20 @@ export async function POST(request: Request) {
     }
   )
 
-  // 1. Check if profile already exists and its approval status
-  const { data: existingProfiles } = await serviceSupabase
+  // 1. Check if profile already exists
+  const { data: existingProfiles, error: profileLookupError } = await serviceSupabase
     .from('profiles')
     .select('*')
     .eq('email', email)
+    .maybeSingle()
 
-  if (existingProfiles && existingProfiles.length > 0) {
-    const profile = existingProfiles[0]
-    if (profile.approved) {
+  if (profileLookupError) {
+    console.error('[signup] profile lookup error', profileLookupError.message)
+  }
+
+  if (existingProfiles) {
+    console.log('[signup] profile exists', existingProfiles.id, 'approved=', existingProfiles.approved)
+    if (existingProfiles.approved) {
       return NextResponse.json(
         { error: 'Аккаунт уже существует. Войдите.' },
         { status: 409 }
@@ -35,7 +42,7 @@ export async function POST(request: Request) {
     )
   }
 
-  // 2. Try to create auth user. If email exists, fetch that user and create profile only.
+  // 2. Try to create auth user
   let userId: string | null = null
 
   const { data: authData, error: authError } = await serviceSupabase.auth.admin.createUser({
@@ -47,7 +54,9 @@ export async function POST(request: Request) {
 
   if (authData?.user) {
     userId = authData.user.id
+    console.log('[signup] created auth user', userId)
   } else if (authError) {
+    console.error('[signup] createUser error', authError.message)
     // If user already registered, try to find by email
     const { data: userList, error: listError } = await serviceSupabase.auth.admin.listUsers()
     if (listError) {
@@ -59,13 +68,13 @@ export async function POST(request: Request) {
     }
     const existingUser = userList.users.find((u) => u.email === email)
     if (!existingUser) {
-      console.error('[signup] createUser error', authError.message)
       return NextResponse.json(
         { error: authError.message || 'Не удалось создать пользователя' },
         { status: 400 }
       )
     }
     userId = existingUser.id
+    console.log('[signup] found existing auth user', userId)
   }
 
   if (!userId) {
@@ -93,5 +102,6 @@ export async function POST(request: Request) {
     )
   }
 
+  console.log('[signup] created profile', userId)
   return NextResponse.json({ success: true, pendingApproval: true })
 }
