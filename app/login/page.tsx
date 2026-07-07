@@ -17,25 +17,31 @@ export default function LoginPage() {
     setError('')
 
     const endpoint = isSignUp ? '/auth/signup' : '/auth/signin'
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
 
-    const data = await res.json()
-    setLoading(false)
+      const data = await res.json()
+      setLoading(false)
 
-    if (!res.ok) {
-      setError(data.error || 'Ошибка')
-      return
-    }
+      if (!res.ok) {
+        setError(data.error || 'Ошибка')
+        return
+      }
 
-    if (isSignUp) {
-      router.push('/pending')
-    } else {
-      router.refresh()
-      router.push('/')
+      if (isSignUp) {
+        router.push('/pending')
+      } else {
+        router.refresh()
+        setTimeout(() => router.push('/'), 0)
+      }
+    } catch (e: any) {
+      setLoading(false)
+      setError('Не удалось подключиться к серверу. Возможно, доступ ограничен в вашем регионе.')
+      console.error(e)
     }
   }
 
