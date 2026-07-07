@@ -27,6 +27,8 @@ export default async function ManagersPage() {
     const password = formData.get('password') as string
     const fullName = formData.get('fullName') as string
 
+    const isAdmin = formData.get('isAdmin') === 'true'
+
     const serviceSupabase = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -47,7 +49,7 @@ export default async function ManagersPage() {
       id: authData.user.id,
       email,
       full_name: fullName,
-      role: 'manager',
+      role: isAdmin ? 'admin' : 'manager',
       approved: true,
       active: true,
     })
@@ -86,6 +88,12 @@ export default async function ManagersPage() {
         <div>
           <label className="block text-sm font-medium mb-1">ФИО</label>
           <input name="fullName" type="text" required className="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+            <input name="isAdmin" type="checkbox" value="true" className="w-4 h-4" />
+            Сделать администратором
+          </label>
         </div>
         <button type="submit" className="w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-500">
           Добавить
