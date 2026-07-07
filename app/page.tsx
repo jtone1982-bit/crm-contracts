@@ -69,7 +69,7 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="bg-white border rounded-lg overflow-x-auto">
+      <div className="bg-white border rounded-lg overflow-x-auto hidden md:block">
         <table className="w-full min-w-[600px]">
           <thead className="bg-gray-100 text-left text-sm">
             <tr>
@@ -96,10 +96,31 @@ export default async function DashboardPage() {
             ))}
           </tbody>
         </table>
-        {(!candidates || candidates.length === 0) && (
-          <div className="p-8 text-center text-gray-500">Нет кандидатов</div>
-        )}
       </div>
+
+      <div className="md:hidden space-y-3">
+        {candidates?.map((c) => (
+          <Link
+            key={c.id}
+            href={`/candidates/${c.id}`}
+            className="block bg-white border rounded-lg p-4 hover:shadow-md transition"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-blue-600 font-medium">{c.phone}</span>
+              <span className="text-xs text-gray-500">{new Date(c.created_at).toLocaleDateString('ru-RU')}</span>
+            </div>
+            <div className="mt-2 text-sm text-gray-900">{c.full_name || '—'}</div>
+            <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
+              <span className="px-2 py-0.5 bg-gray-100 rounded">{c.status}</span>
+              <span>→ {c.city_to || '—'}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {(!candidates || candidates.length === 0) && (
+        <div className="p-8 text-center text-gray-500">Нет кандидатов</div>
+      )}
     </div>
   )
 }

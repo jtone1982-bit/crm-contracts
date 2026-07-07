@@ -19,10 +19,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b px-4 py-3 flex items-center justify-between">
+      <nav className="bg-white border-b px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="font-bold text-lg">CRM Контракты</div>
         <div className="flex items-center gap-4 text-sm">
-          <span className="text-gray-600">{profile.email}</span>
+          <span className="text-gray-600 truncate max-w-[150px]">{profile.email}</span>
           <span className="px-2 py-1 bg-gray-100 rounded">{profile.role === 'admin' ? 'Админ' : 'Менеджер'}</span>
           <form action="/auth/signout" method="post">
             <button type="submit" className="text-red-600 hover:underline">Выйти</button>

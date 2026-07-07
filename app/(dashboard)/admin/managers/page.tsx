@@ -100,7 +100,7 @@ export default async function ManagersPage() {
         </button>
       </form>
 
-      <div className="bg-white border rounded-lg overflow-x-auto">
+      <div className="bg-white border rounded-lg overflow-x-auto hidden md:block">
         <table className="w-full min-w-[500px]">
           <thead className="bg-gray-100 text-left text-sm">
             <tr>
@@ -139,6 +139,38 @@ export default async function ManagersPage() {
           </tbody>
         </table>
       </div>
+
+      <div className="md:hidden space-y-3">
+        {managers?.map((m) => (
+          <div key={m.id} className="bg-white border rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-sm">{m.email}</span>
+              {m.approved ? (
+                <span className="text-xs text-green-600">Активен</span>
+              ) : (
+                <span className="text-xs text-yellow-600">На модерации</span>
+              )}
+            </div>
+            <div className="mt-1 text-sm text-gray-700">{m.full_name || '—'}</div>
+            <div className="mt-3">
+              <form action={approve} className="inline">
+                <input type="hidden" name="userId" value={m.id} />
+                <input type="hidden" name="approved" value={(!m.approved).toString()} />
+                <button
+                  type="submit"
+                  className={`w-full px-3 py-2 rounded text-white text-sm ${m.approved ? 'bg-red-500 hover:bg-red-400' : 'bg-green-500 hover:bg-green-400'}`}
+                >
+                  {m.approved ? 'Деактивировать' : 'Одобрить'}
+                </button>
+              </form>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {(!managers || managers.length === 0) && (
+        <div className="p-8 text-center text-gray-500">Нет менеджеров</div>
+      )}
     </div>
   )
 }
