@@ -8,6 +8,8 @@ interface Profile {
   id: string
   email: string
   full_name: string | null
+  last_active_at: string | null
+  last_sign_in_at: string | null
 }
 
 interface Message {
@@ -58,6 +60,22 @@ export default function MessagesPage() {
   const [lastMessages, setLastMessages] = useState<Record<string, Message>>({})
   const unread = useUnreadCounts()
   const { permission, requestPermission } = useNotifications()
+
+  const formatActivity = (date: string | null) => {
+    if (!date) return ''
+    const d = new Date(date)
+    if (isNaN(d.getTime())) return ''
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    if (diffMins < 1) return 'только что'
+    if (diffMins < 60) return `${diffMins} мин назад`
+    if (diffHours < 24) return `${diffHours} ч назад`
+    if (diffDays < 7) return `${diffDays} д назад`
+    return d.toLocaleDateString('ru-RU')
+  }
 
   useEffect(() => {
     fetch('/api/messages')
@@ -141,6 +159,10 @@ export default function MessagesPage() {
                 <div>
                   <div className="font-medium">{p.full_name || p.email}</div>
                   {p.full_name && <div className="text-sm text-gray-500">{p.email}</div>}
+                  <div className="text-xs text-gray-400 mt-1">
+                    {formatActivity(p.last_active_at) ? `Был на сайте: ${formatActivity(p.last_active_at)}` : ''}
+                    {p.last_sign_in_at && !p.last_active_at ? `Вход: ${formatActivity(p.last_sign_in_at)}` : ''}
+                  </div>
                   {lastMessages[p.id]?.content && (
                     <div className="text-xs text-gray-400 mt-1 truncate max-w-[200px] sm:max-w-sm">
                       {lastMessages[p.id].sender_id === p.id ? '' : 'Вы: '}

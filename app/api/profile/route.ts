@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase-server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -13,9 +14,26 @@ export async function GET() {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+
+  const serviceSupabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+
+  const { data: userList, error: listError } = await serviceSupabase.auth.admin.listUsers()
+  if (listError) {
+    console.error('[profile] listUsers error', listError.message)
+  }
+
+  const authUser = (userList?.users || []).find((u) => u.id === user.id)
+
   return NextResponse.json({
     email: user.email,
     user_metadata: user.user_metadata || {},
+    last_active_at: profile?.last_active_at || null,
+    last_sign_in_at: authUser?.last_sign_in_at || null,
   })
 }
 

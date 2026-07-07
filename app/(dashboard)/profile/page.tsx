@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import AvatarUpload from '@/components/AvatarUpload'
 import Link from 'next/link'
+import { formatActivityTime, formatRelativeTime } from '@/lib/datetime'
 
 interface SocialLink {
   platform: string
@@ -19,6 +20,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [userId, setUserId] = useState('')
+  const [lastActiveAt, setLastActiveAt] = useState<string | null>(null)
+  const [lastSignInAt, setLastSignInAt] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/profile')
@@ -31,6 +34,8 @@ export default function ProfilePage() {
         setAddress(meta.address || '')
         setAvatarUrl(meta.avatar_url || '')
         setUserId(data.user_metadata?.sub || '')
+        setLastActiveAt(data.last_active_at || null)
+        setLastSignInAt(data.last_sign_in_at || null)
         setSocials(
           Array.isArray(meta.social_links) && meta.social_links.length > 0
             ? meta.social_links
@@ -96,6 +101,11 @@ export default function ProfilePage() {
       )}
 
       <form onSubmit={handleSubmit} className="bg-white border rounded-lg p-6 space-y-4">
+        <div className="space-y-1 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+          <div>Был на сайте: {formatActivityTime(lastActiveAt)} {lastActiveAt && `(${formatRelativeTime(lastActiveAt)})`}</div>
+          <div>Последний вход: {formatActivityTime(lastSignInAt)} {lastSignInAt && `(${formatRelativeTime(lastSignInAt)})`}</div>
+        </div>
+
         <div className="flex justify-center">
           <AvatarUpload currentUrl={avatarUrl} onUpload={setAvatarUrl} />
         </div>

@@ -8,20 +8,20 @@ async function loadProfiles(supabase: Awaited<ReturnType<typeof createClient>>, 
     if (m.receiver_id) userIds.add(m.receiver_id)
   })
 
-  if (userIds.size === 0) return new Map<string, string | null>()
+  if (userIds.size === 0) return new Map<string, { full_name: string | null; last_active_at: string | null }>()
 
   const ids = Array.from(userIds)
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, full_name')
+    .select('id, full_name, last_active_at')
     .in('id', ids)
 
   if (error) {
     console.error('[messages] loadProfiles error', error.message)
-    return new Map<string, string | null>()
+    return new Map<string, { full_name: string | null; last_active_at: string | null }>()
   }
 
-  return new Map((profiles || []).map((p: any) => [p.id, p.full_name]))
+  return new Map((profiles || []).map((p: any) => [p.id, { full_name: p.full_name, last_active_at: p.last_active_at }]))
 }
 
 export async function GET(request: Request) {
@@ -64,11 +64,19 @@ export async function GET(request: Request) {
   const messages = data || []
   const profileMap = await loadProfiles(supabase, messages)
 
-  const enriched = messages.map((m) => ({
-    ...m,
-    sender: m.sender_id ? { id: m.sender_id, full_name: profileMap.get(m.sender_id) || null } : null,
-    receiver: m.receiver_id ? { id: m.receiver_id, full_name: profileMap.get(m.receiver_id) || null } : null,
-  }))
+  const enriched = messages.map((m) => {
+    const senderProfile = m.sender_id ? profileMap.get(m.sender_id) : null
+    const receiverProfile = m.receiver_id ? profileMap.get(m.receiver_id) : null
+    return {
+      ...m,
+      sender: m.sender_id
+        ? { id: m.sender_id, full_name: senderProfile?.full_name || null, last_active_at: senderProfile?.last_active_at || null }
+        : null,
+      receiver: m.receiver_id
+        ? { id: m.receiver_id, full_name: receiverProfile?.full_name || null, last_active_at: receiverProfile?.last_active_at || null }
+        : null,
+    }
+  })
 
   if (q) {
     const filtered = enriched.filter((m) => {
@@ -113,10 +121,20 @@ export async function POST(request: Request) {
   }
 
   const profileMap = await loadProfiles(supabase, [data])
+  const senderProfile = data.sender_id ? profileMap.get(data.sender_id) : null
+  const receiverProfile = data.receiver_id ? profileMap.get(data.receiver_id) : null
   const enriched = {
     ...data,
-    sender: data.sender_id ? { id: data.sender_id, full_name: profileMap.get(data.sender_id) || null } : null,
-    receiver: data.receiver_id ? { id: data.receiver_id, full_name: profileMap.get(data.receiver_id) || null } : null,
+    sender: data.sender_id
+      ? { id: data.sender_id, full_name: senderProfile?.full_name || null, last_active_at: senderProfile?.last_active_at || null }
+      : null,
+    receiver: data.receiver_id
+      ? {
+          id: data.receiver_id,
+          full_name: receiverProfile?.full_name || null,
+          last_active_at: receiverProfile?.last_active_at || null,
+        }
+      : null,
   }
 
   return NextResponse.json({ message: enriched })

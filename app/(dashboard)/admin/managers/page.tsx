@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { formatActivityTime, formatRelativeTime } from '@/lib/datetime'
 
 export default async function ManagersPage() {
   const supabase = await createClient()
@@ -20,6 +21,13 @@ export default async function ManagersPage() {
   }
 
   const { data: managers } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
+
+  const serviceSupabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { data: userList } = await serviceSupabase.auth.admin.listUsers()
+  const signInMap = new Map((userList?.users || []).map((u) => [u.id, u.last_sign_in_at]))
 
   async function addManager(formData: FormData) {
     'use server'
@@ -107,6 +115,8 @@ export default async function ManagersPage() {
               <th className="p-3">Email</th>
               <th className="p-3">ФИО</th>
               <th className="p-3">Статус</th>
+              <th className="p-3">Был на сайте</th>
+              <th className="p-3">Последний вход</th>
               <th className="p-3">Действия</th>
             </tr>
           </thead>
@@ -120,6 +130,18 @@ export default async function ManagersPage() {
                     <span className="text-green-600">Активен</span>
                   ) : (
                     <span className="text-yellow-600">На модерации</span>
+                  )}
+                </td>
+                <td className="p-3">
+                  <div className="text-gray-700">{formatActivityTime(m.last_active_at)}</div>
+                  {m.last_active_at && (
+                    <div className="text-xs text-gray-500">{formatRelativeTime(m.last_active_at)}</div>
+                  )}
+                </td>
+                <td className="p-3">
+                  <div className="text-gray-700">{formatActivityTime(signInMap.get(m.id) || null)}</div>
+                  {signInMap.get(m.id) && (
+                    <div className="text-xs text-gray-500">{formatRelativeTime(signInMap.get(m.id))}</div>
                   )}
                 </td>
                 <td className="p-3">
@@ -152,6 +174,12 @@ export default async function ManagersPage() {
               )}
             </div>
             <div className="mt-1 text-sm text-gray-700">{m.full_name || '—'}</div>
+            <div className="mt-2 text-xs text-gray-500">
+              Был на сайте: {formatActivityTime(m.last_active_at)}
+            </div>
+            <div className="text-xs text-gray-500">
+              Вход: {formatActivityTime(signInMap.get(m.id) || null)}
+            </div>
             <div className="mt-3">
               <form action={approve} className="inline">
                 <input type="hidden" name="userId" value={m.id} />

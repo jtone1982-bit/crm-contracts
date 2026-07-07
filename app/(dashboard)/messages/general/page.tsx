@@ -4,14 +4,15 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import EmojiPickerButton from '@/components/EmojiPickerButton'
 import MessageContent from '@/components/MessageContent'
+import { formatActivityTime, formatRelativeTime } from '@/lib/datetime'
 
 interface Message {
   id: string
   sender_id: string
   content: string
   created_at: string
-  sender: { id: string; full_name: string | null } | null
-  receiver: { id: string; full_name: string | null } | null
+  sender: { id: string; full_name: string | null; last_active_at?: string | null } | null
+  receiver: { id: string; full_name: string | null; last_active_at?: string | null } | null
 }
 
 export default function GeneralChatPage() {
@@ -104,6 +105,11 @@ export default function GeneralChatPage() {
             >
               <div className="text-xs font-medium mb-1">
                 {m.sender?.full_name || 'Пользователь'}
+                {m.sender?.id && (
+                  <span className="ml-2 text-gray-400 font-normal">
+                    {formatActivityTime(m.sender.last_active_at)} {m.sender.last_active_at && `(${formatRelativeTime(m.sender.last_active_at)})`}
+                  </span>
+                )}
               </div>
               <div className="text-sm">
                 <MessageContent content={m.content} />
