@@ -9,7 +9,8 @@ interface Message {
   sender_id: string
   content: string
   created_at: string
-  profiles?: { full_name: string | null } | null
+  sender: { id: string; full_name: string | null } | null
+  receiver: { id: string; full_name: string | null } | null
 }
 
 export default function PrivateChatPage() {
@@ -86,6 +87,9 @@ export default function PrivateChatPage() {
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
+              <div className="text-xs font-medium mb-1">
+                {m.sender_id === currentUserId ? 'Вы' : m.sender?.full_name || 'Пользователь'}
+              </div>
               <div className="text-sm">{m.content}</div>
               <div className="text-xs text-gray-500 mt-1">
                 {new Date(m.created_at).toLocaleTimeString('ru-RU')}

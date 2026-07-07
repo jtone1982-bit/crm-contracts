@@ -16,7 +16,8 @@ interface Message {
   content: string
   is_general: boolean
   created_at: string
-  profiles?: { full_name: string | null }
+  sender: { id: string; full_name: string | null } | null
+  receiver: { id: string; full_name: string | null } | null
 }
 
 export default function MessagesPage() {
@@ -89,7 +90,7 @@ export default function MessagesPage() {
               className="block bg-white border rounded-lg p-4 hover:shadow-md transition"
             >
               <div className="font-medium">{p.full_name || p.email}</div>
-              <div className="text-sm text-gray-500">{p.email}</div>
+              {p.full_name && <div className="text-sm text-gray-500">{p.email}</div>}
             </Link>
           ))}
           {!loading && profiles.length === 0 && (

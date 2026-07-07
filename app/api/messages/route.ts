@@ -16,7 +16,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
-  let query = supabase.from('messages').select('*').order('created_at', { ascending: true })
+  let query = supabase
+    .from('messages')
+    .select(`
+      *,
+      sender:profiles!sender_id(id, full_name),
+      receiver:profiles!receiver_id(id, full_name)
+    `)
+    .order('created_at', { ascending: true })
 
   if (general) {
     query = query.eq('is_general', true)
@@ -63,7 +70,11 @@ export async function POST(request: Request) {
     receiver_id: isGeneral ? null : receiverId || null,
     content: content.trim(),
     is_general: !!isGeneral,
-  }).select().single()
+  }).select(`
+    *,
+    sender:profiles!sender_id(id, full_name),
+    receiver:profiles!receiver_id(id, full_name)
+  `).single()
 
   if (error) {
     console.error('[messages] insert error', error.message)
