@@ -17,32 +17,7 @@ export async function POST(request: Request) {
     }
   )
 
-  // 1. Check if profile already exists
-  const { data: existingProfiles, error: profileLookupError } = await serviceSupabase
-    .from('profiles')
-    .select('*')
-    .eq('email', email)
-    .maybeSingle()
-
-  if (profileLookupError) {
-    console.error('[signup] profile lookup error', profileLookupError.message)
-  }
-
-  if (existingProfiles) {
-    console.log('[signup] profile exists', existingProfiles.id, 'approved=', existingProfiles.approved)
-    if (existingProfiles.approved) {
-      return NextResponse.json(
-        { error: 'Аккаунт уже существует. Войдите.' },
-        { status: 409 }
-      )
-    }
-    return NextResponse.json(
-      { error: 'Заявка на рассмотрении. Дождитесь одобрения администратора.' },
-      { status: 409 }
-    )
-  }
-
-  // 2. Try to create auth user
+  // 1. Try to create auth user
   let userId: string | null = null
 
   const { data: authData, error: authError } = await serviceSupabase.auth.admin.createUser({
@@ -57,6 +32,7 @@ export async function POST(request: Request) {
     console.log('[signup] created auth user', userId)
   } else if (authError) {
     console.error('[signup] createUser error', authError.message)
+
     // If user already registered, try to find by email
     const { data: userList, error: listError } = await serviceSupabase.auth.admin.listUsers()
     if (listError) {
@@ -66,13 +42,15 @@ export async function POST(request: Request) {
         { status: 500 }
       )
     }
-    const existingUser = userList.users.find((u) => u.email === email)
+
+    const existingUser = userList.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
     if (!existingUser) {
       return NextResponse.json(
         { error: authError.message || 'Не удалось создать пользователя' },
         { status: 400 }
       )
     }
+
     userId = existingUser.id
     console.log('[signup] found existing auth user', userId)
   }
@@ -81,6 +59,31 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'Не удалось определить пользователя' },
       { status: 500 }
+    )
+  }
+
+  // 2. Check if profile already exists for this user
+  const { data: existingProfile, error: profileLookupError } = await serviceSupabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (profileLookupError) {
+    console.error('[signup] profile lookup error', profileLookupError.message)
+  }
+
+  if (existingProfile) {
+    console.log('[signup] profile exists', existingProfile.id, 'approved=', existingProfile.approved)
+    if (existingProfile.approved) {
+      return NextResponse.json(
+        { error: 'Аккаунт уже существует. Войдите.' },
+        { status: 409 }
+      )
+    }
+    return NextResponse.json(
+      { error: 'Заявка на рассмотрении. Дождитесь одобрения администратора.' },
+      { status: 409 }
     )
   }
 
