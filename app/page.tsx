@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase-server'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { PipelineStatus, PIPELINE_STATUSES } from '@/lib/types'
 import ExcelImportButton from '@/components/ExcelImportButton'
 
@@ -9,7 +10,15 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+  if (!user) {
+    redirect('/login')
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+
+  if (!profile) {
+    redirect('/login')
+  }
 
   let query = supabase.from('candidates').select('*', { count: 'exact' })
   if (profile.role === 'manager') {

@@ -13,22 +13,34 @@ function normalizePhone(raw: any): string {
 
 export async function POST(request: Request) {
   try {
-    const payload = await request.json()
+    const contentType = request.headers.get('content-type') || ''
+    let payload: any = {}
 
-    // Chence sends phone in msisdn or phone field
-    const phoneRaw = payload.msisdn || payload.phone || payload.telephone || payload.Телефон
+    try {
+      if (contentType.includes('application/json')) {
+        payload = await request.json()
+      } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+        const formData = await request.formData()
+        formData.forEach((value, key) => {
+          payload[key] = value
+        })
+      } else {
+        // Try JSON fallback
+        const text = await request.text()
+        if (text) payload = JSON.parse(text)
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+
+    const phoneRaw = payload.phone || payload.msisdn || payload.telephone || payload.Телефон
     const phone = normalizePhone(phoneRaw)
     if (!phone) {
-      return NextResponse.json({ error: 'No phone', imported: 0 }, { status: 400 })
+      return NextResponse.json({ error: 'No phone', imported: 0, received: payload }, { status: 400 })
     }
 
-    // Project name
-    let project = ''
-    if (typeof payload.project === 'object' && payload.project?.name) {
-      project = payload.project.name
-    } else if (typeof payload.project === 'string') {
-      project = payload.project
-    }
+    const project = payload.project_name || payload.project || ''
+    const tag = payload.tag || ''
 
     // Get active managers
     const { data: managers, error: managersError } = await getSupabaseAdmin()
@@ -53,7 +65,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ imported: 0, duplicate: true, phone })
     }
 
-    // Round-robin: pick manager with fewest candidates
+    // Round-robin by current candidate counts
     const { data: counts } = await getSupabaseAdmin()
       .from('candidates')
       .select('manager_id, count', { count: 'exact' })
@@ -81,6 +93,7 @@ export async function POST(request: Request) {
       status: 'На обзвон',
       city_to: project,
       source: 'chence-webhook',
+      notes: tag ? `Тег: ${tag}` : '',
     })
 
     if (insertError) {
