@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import EmojiPickerButton from '@/components/EmojiPickerButton'
+import MessageContent from '@/components/MessageContent'
 
 interface Message {
   id: string
@@ -94,7 +95,9 @@ export default function PrivateChatPage() {
               <div className="text-xs font-medium mb-1">
                 {m.sender_id === currentUserId ? 'Вы' : m.sender?.full_name || 'Пользователь'}
               </div>
-              <div className="text-sm">{m.content}</div>
+              <div className="text-sm">
+                <MessageContent content={m.content} />
+              </div>
               <div className="text-xs text-gray-500 mt-1">
                 {new Date(m.created_at).toLocaleTimeString('ru-RU')}
               </div>
