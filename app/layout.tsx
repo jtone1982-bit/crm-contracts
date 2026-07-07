@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import NotificationProvider from "@/components/NotificationProvider";
+import ChatNotifications from "@/components/ChatNotifications";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +34,12 @@ export default function RootLayout({
       <head>
         <meta name="color-scheme" content="light only" />
       </head>
-      <body className="min-h-full flex flex-col bg-white text-gray-900" data-theme="light">{children}</body>
+      <body className="min-h-full flex flex-col bg-white text-gray-900" data-theme="light">
+        <NotificationProvider>
+          {children}
+          <ChatNotifications />
+        </NotificationProvider>
+      </body>
     </html>
   );
 }

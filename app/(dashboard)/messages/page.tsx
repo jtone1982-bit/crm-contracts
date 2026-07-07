@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useNotifications } from '@/components/NotificationProvider'
 
 interface Profile {
   id: string
@@ -47,6 +48,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [lastMessages, setLastMessages] = useState<Record<string, Message>>({})
   const unread = useUnreadCounts()
+  const { permission, requestPermission } = useNotifications()
 
   useEffect(() => {
     fetch('/api/messages')
@@ -78,6 +80,15 @@ export default function MessagesPage() {
         <h1 className="text-2xl font-bold">Сообщения</h1>
         <Link href="/" className="text-blue-600 hover:underline">← Назад</Link>
       </div>
+
+      {permission === 'default' && (
+        <button
+          onClick={requestPermission}
+          className="w-full py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500"
+        >
+          Включить уведомления в браузере
+        </button>
+      )}
 
       <div className="space-y-3">
         <Link
