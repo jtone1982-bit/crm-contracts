@@ -34,6 +34,11 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { phone, additional_email, address, social_links, avatar_url, full_name } = body
 
+  // Sync display name into profiles table for messenger and dashboard
+  if (full_name) {
+    await supabase.from('profiles').update({ full_name }).eq('id', user.id)
+  }
+
   const { data, error } = await supabase.auth.updateUser({
     data: {
       ...user.user_metadata,
