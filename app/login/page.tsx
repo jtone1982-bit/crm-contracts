@@ -22,6 +22,7 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       })
 
       const data = await res.json()
@@ -35,8 +36,7 @@ export default function LoginPage() {
       if (isSignUp) {
         router.push('/pending')
       } else {
-        router.refresh()
-        setTimeout(() => router.push('/'), 0)
+        window.location.href = '/'
       }
     } catch (e: any) {
       setLoading(false)
@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-2">CRM Контракты</h1>
         <p className="text-center text-gray-500 text-sm mb-6">
           {isSignUp ? 'Регистрация нового менеджера' : 'Вход в систему'}
