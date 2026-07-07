@@ -177,9 +177,13 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
 
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-      const audioContext = new AudioContextClass()
-      audioContextRef.current = audioContext
+      if (!audioContextRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+        audioContextRef.current = new AudioContextClass()
+      }
+      const audioContext = audioContextRef.current
+
+      await audioContext.resume()
 
       const source = audioContext.createMediaStreamSource(stream)
       sourceRef.current = source
@@ -194,7 +198,7 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
       }
 
       source.connect(processor)
-      processor.connect(audioContext.destination)
+      // Processor output not connected — we only read input samples
 
       startTimeRef.current = Date.now()
       setDuration(0)
