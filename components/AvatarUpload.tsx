@@ -15,6 +15,11 @@ export default function AvatarUpload({ currentUrl, onUpload }: AvatarUploadProps
     const file = e.target.files?.[0]
     if (!file) return
 
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Поддерживаются только JPG, PNG, WebP. HEIC нужно конвертировать вручную.')
+      return
+    }
+
     setUploading(true)
     const formData = new FormData()
     formData.append('file', file)
@@ -48,10 +53,11 @@ export default function AvatarUpload({ currentUrl, onUpload }: AvatarUploadProps
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         className="hidden"
         onChange={handleFileChange}
       />
+      <div className="text-[10px] text-gray-400">JPG, PNG, WebP</div>
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
