@@ -70,11 +70,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const update: Record<string, any> = {}
   const fields = [
     'full_name', 'birth_date', 'age', 'citizen_rf', 'city_from', 'city_to',
-    'lead_source', 'health_group', 'health_group_reason', 'scars', 'other_health_issues',
-    'criminal_record', 'criminal_article', 'foreign_documents', 'driver_license',
+    'lead_source', 'health_group', 'health_group_reason', 'diseases', 'scars', 'other_health_issues',
+    'criminal_record', 'criminal_article', 'documents', 'foreign_documents', 'driver_license',
     'family_relation', 'is_officer', 'is_woman', 'is_commissioned', 'status', 'notes',
     'departure_date', 'departure_datetime', 'next_contact_date', 'reason_for_failure',
-    'failure_comment', 'comments',
+    'failure_comment', 'comments', 'telegram_username', 'whatsapp_number', 'max_contact',
   ]
   for (const f of fields) {
     if (body[f] !== undefined) update[f] = body[f]

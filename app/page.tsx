@@ -18,7 +18,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     redirect('/login')
   }
 
-  let query = supabase.from('candidates').select('*').order('created_at', { ascending: false })
+  let query = supabase.from('candidates').select(
+    'id, phone, full_name, status, city_to, created_at, telegram_username, whatsapp_number, max_contact'
+  ).order('created_at', { ascending: false })
   if (profile.role === 'manager') {
     query = query.eq('manager_id', user.id)
   }

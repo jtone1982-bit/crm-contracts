@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { PipelineStatus, PIPELINE_STATUSES } from '@/lib/types'
 import CandidateModal from '@/components/CandidateModal'
+import { PhoneActionsMenu } from '@/components/PhoneActionsMenu'
 
 interface Candidate {
   id: string
@@ -12,6 +13,9 @@ interface Candidate {
   city_from?: string | null
   city_to?: string | null
   next_contact_date?: string | null
+  telegram_username?: string | null
+  whatsapp_number?: string | null
+  max_contact?: string | null
 }
 
 interface CandidatesListProps {
@@ -59,12 +63,19 @@ export default function CandidatesList({ candidates, statusFilter }: CandidatesL
             {candidates?.map((c) => (
               <tr key={c.id} className="border-t hover:bg-gray-50">
                 <td className="p-3">
-                  <button
-                    onClick={() => setSelectedId(c.id)}
-                    className="text-blue-600 hover:underline text-left"
+                  <PhoneActionsMenu
+                    phone={c.phone}
+                    telegramUsername={c.telegram_username}
+                    whatsappNumber={c.whatsapp_number}
+                    maxContact={c.max_contact}
                   >
-                    {c.phone}
-                  </button>
+                    <button
+                      onClick={() => setSelectedId(c.id)}
+                      className="text-blue-600 hover:underline text-left"
+                    >
+                      {c.phone}
+                    </button>
+                  </PhoneActionsMenu>
                 </td>
                 <td className="p-3">{c.full_name || '—'}</td>
                 <td className="p-3">{c.city_from || '—'}</td>
@@ -76,7 +87,7 @@ export default function CandidatesList({ candidates, statusFilter }: CandidatesL
         </table>
       </div>
 
-      <div className="md:hidden space-y-3">
+        <div className="md:hidden space-y-3">
         {candidates?.map((c) => (
           <button
             key={c.id}
@@ -84,7 +95,14 @@ export default function CandidatesList({ candidates, statusFilter }: CandidatesL
             className="block w-full text-left bg-white border rounded-lg p-4 hover:shadow-md transition"
           >
             <div className="flex items-center justify-between">
-              <span className="text-blue-600 font-medium">{c.phone}</span>
+              <PhoneActionsMenu
+                phone={c.phone}
+                telegramUsername={c.telegram_username}
+                whatsappNumber={c.whatsapp_number}
+                maxContact={c.max_contact}
+              >
+                <span className="text-blue-600 font-medium">{c.phone}</span>
+              </PhoneActionsMenu>
               <span className="text-xs text-gray-500">{c.next_contact_date || '—'}</span>
             </div>
             <div className="mt-2 text-sm text-gray-900">{c.full_name || '—'}</div>

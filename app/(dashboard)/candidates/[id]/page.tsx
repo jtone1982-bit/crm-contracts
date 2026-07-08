@@ -37,7 +37,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
       'health_group', 'health_group_reason', 'diseases', 'scars', 'other_health_issues',
       'criminal_record', 'criminal_article', 'documents', 'foreign_documents', 'driver_license',
       'family_relation', 'status', 'notes', 'departure_date', 'departure_datetime',
-      'next_contact_date', 'reason_for_failure', 'failure_comment', 'comments',
+      'next_contact_date', 'reason_for_failure', 'failure_comment', 'comments', 'telegram_username', 'whatsapp_number', 'max_contact',
     ]
     for (const field of fields) {
       values[field] = formData.get(field)?.toString() || null

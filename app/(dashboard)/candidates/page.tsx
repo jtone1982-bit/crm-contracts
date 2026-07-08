@@ -21,7 +21,9 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
   const managerId = user.id
   const role = profile.role
 
-  let query = supabase.from('candidates').select('*')
+  let query = supabase.from('candidates').select(
+    'id, phone, full_name, city_from, city_to, next_contact_date, telegram_username, whatsapp_number, max_contact'
+  )
   if (role === 'manager') {
     query = query.eq('manager_id', managerId)
   }

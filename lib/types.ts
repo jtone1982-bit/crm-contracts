@@ -63,7 +63,6 @@ export interface CandidateFile {
 
 export interface Candidate {
   id: string
-  created_at: string
   phone: string
   full_name?: string | null
   birth_date?: string | null
@@ -83,9 +82,9 @@ export interface Candidate {
   foreign_documents?: string | null
   driver_license?: string | null
   family_relation?: string | null
-  is_officer?: boolean
-  is_woman?: boolean
-  is_commissioned?: boolean
+  is_officer?: boolean | null
+  is_woman?: boolean | null
+  is_commissioned?: boolean | null
   status: PipelineStatus
   notes?: string | null
   departure_date?: string | null
@@ -94,10 +93,12 @@ export interface Candidate {
   reason_for_failure?: string | null
   failure_comment?: string | null
   comments?: string | null
-  manager_id: string
-  manager_email?: string
-  imported_from_sheets?: boolean
-  sheet_row_index?: number
+  telegram_username?: string | null
+  whatsapp_number?: string | null
+  max_contact?: string | null
+  manager_id?: string | null
+  bitrix_deal_id?: string | null
+  created_at?: string
   last_activity_at?: string | null
   last_manager_login_at?: string | null
   candidate_files?: CandidateFile[]

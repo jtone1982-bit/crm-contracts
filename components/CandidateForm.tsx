@@ -158,6 +158,9 @@ export function CandidateForm({ candidate, statuses, onSubmit }: CandidateFormPr
         {renderInput('departure_date', candidate.departure_date || '', 'Дата выезда', 'date')}
         {renderInput('departure_datetime', candidate.departure_datetime || '', 'Дата и время выезда', 'datetime-local')}
         {renderInput('next_contact_date', candidate.next_contact_date || '', 'Следующий контакт', 'date')}
+      {renderInput('telegram_username', candidate.telegram_username, 'Telegram username')}
+        {renderInput('whatsapp_number', candidate.whatsapp_number, 'WhatsApp номер')}
+        {renderInput('max_contact', candidate.max_contact, 'MAX контакт')}
       </div>
 
       <div className="space-y-2">

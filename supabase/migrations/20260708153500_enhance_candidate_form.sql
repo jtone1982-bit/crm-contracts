@@ -12,7 +12,10 @@ alter table public.candidates
   add column if not exists reason_for_failure text,
   add column if not exists failure_comment text,
   add column if not exists last_activity_at timestamptz,
-  add column if not exists last_manager_login_at timestamptz;
+  add column if not exists last_manager_login_at timestamptz,
+  add column if not exists telegram_username text,
+  add column if not exists whatsapp_number text,
+  add column if not exists max_contact text;
 
 -- Ensure arrays for multi-select fields
 do $$

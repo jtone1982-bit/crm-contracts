@@ -6,6 +6,7 @@ import { PipelineStatus, PIPELINE_STATUSES } from '@/lib/types'
 import ExcelImportButton from '@/components/ExcelImportButton'
 import UnreadBadge from '@/components/UnreadBadge'
 import CandidateModal from '@/components/CandidateModal'
+import { PhoneActionsMenu } from '@/components/PhoneActionsMenu'
 
 interface Candidate {
   id: string
@@ -14,6 +15,9 @@ interface Candidate {
   status: PipelineStatus
   city_to?: string | null
   created_at: string
+  telegram_username?: string | null
+  whatsapp_number?: string | null
+  max_contact?: string | null
 }
 
 interface Profile {
@@ -89,12 +93,19 @@ export default function CandidatesDashboard({ candidates, profile }: { candidate
             {candidates?.map((c) => (
               <tr key={c.id} className="border-t hover:bg-gray-50">
                 <td className="p-3">
-                  <button
-                    onClick={() => setSelectedId(c.id)}
-                    className="text-blue-600 hover:underline text-left"
+                  <PhoneActionsMenu
+                    phone={c.phone}
+                    telegramUsername={c.telegram_username}
+                    whatsappNumber={c.whatsapp_number}
+                    maxContact={c.max_contact}
                   >
-                    {c.phone}
-                  </button>
+                    <button
+                      onClick={() => setSelectedId(c.id)}
+                      className="text-blue-600 hover:underline text-left"
+                    >
+                      {c.phone}
+                    </button>
+                  </PhoneActionsMenu>
                 </td>
                 <td className="p-3">{c.full_name || '—'}</td>
                 <td className="p-3">{c.status}</td>
@@ -106,7 +117,7 @@ export default function CandidatesDashboard({ candidates, profile }: { candidate
         </table>
       </div>
 
-      <div className="md:hidden space-y-3">
+        <div className="md:hidden space-y-3">
         {candidates?.map((c) => (
           <button
             key={c.id}
@@ -114,7 +125,14 @@ export default function CandidatesDashboard({ candidates, profile }: { candidate
             className="block w-full text-left bg-white border rounded-lg p-4 hover:shadow-md transition"
           >
             <div className="flex items-center justify-between">
-              <span className="text-blue-600 font-medium">{c.phone}</span>
+              <PhoneActionsMenu
+                phone={c.phone}
+                telegramUsername={c.telegram_username}
+                whatsappNumber={c.whatsapp_number}
+                maxContact={c.max_contact}
+              >
+                <span className="text-blue-600 font-medium">{c.phone}</span>
+              </PhoneActionsMenu>
               <span className="text-xs text-gray-500">{new Date(c.created_at).toLocaleDateString('ru-RU')}</span>
             </div>
             <div className="mt-2 text-sm text-gray-900">{c.full_name || '—'}</div>
