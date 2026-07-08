@@ -13,14 +13,19 @@ export default async function CandidatePage({ params }: { params: { id: string }
 
   let query = supabase
     .from('candidates')
-    .select('*, candidate_files(*)')
+    .select('*, candidate_files(id, file_type, file_url, file_name)')
     .eq('id', params.id)
 
   if (profile.role === 'manager') {
     query = query.eq('manager_id', profile.id)
   }
 
-  const { data: candidate } = await query.single()
+  const { data: candidate, error: candidateError } = await query.maybeSingle()
+
+  if (candidateError) {
+    console.error('[candidate page] error', candidateError.message)
+    notFound()
+  }
 
   if (!candidate) {
     notFound()
