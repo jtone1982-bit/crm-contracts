@@ -9,7 +9,7 @@ export const PIPELINE_STATUSES = [
   'Неактуально',
   'Архив',
   'Черный список',
-] as const
+]
 
 export type PipelineStatus = (typeof PIPELINE_STATUSES)[number]
 
