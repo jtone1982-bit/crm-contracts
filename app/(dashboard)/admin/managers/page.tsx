@@ -21,6 +21,7 @@ export default async function ManagersPage() {
   }
 
   const { data: managers } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
+  const { data: departments } = await supabase.from('departments').select('*').order('name')
 
   const serviceSupabase = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -79,6 +80,32 @@ export default async function ManagersPage() {
     revalidatePath('/admin/managers')
   }
 
+  async function setDepartment(formData: FormData) {
+    'use server'
+    const userId = formData.get('userId') as string
+    const departmentId = formData.get('departmentId') as string
+
+    const adminSupabase = await createClient()
+    await adminSupabase
+      .from('profiles')
+      .update({ department_id: departmentId || null })
+      .eq('id', userId)
+
+    if (departmentId) {
+      await adminSupabase
+        .from('candidates')
+        .update({ department_id: departmentId })
+        .eq('manager_id', userId)
+    } else {
+      await adminSupabase
+        .from('candidates')
+        .update({ department_id: null })
+        .eq('manager_id', userId)
+    }
+
+    revalidatePath('/admin/managers')
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Менеджеры</h1>
@@ -132,19 +159,9 @@ export default async function ManagersPage() {
                     <span className="text-yellow-600">На модерации</span>
                   )}
                 </td>
-                <td className="p-3">
-                  <div className="text-gray-700">{formatActivityTime(m.last_active_at)}</div>
-                  {m.last_active_at && (
-                    <div className="text-xs text-gray-500">{formatRelativeTime(m.last_active_at)}</div>
-                  )}
-                </td>
-                <td className="p-3">
-                  <div className="text-gray-700">{formatActivityTime(signInMap.get(m.id) || null)}</div>
-                  {signInMap.get(m.id) && (
-                    <div className="text-xs text-gray-500">{formatRelativeTime(signInMap.get(m.id))}</div>
-                  )}
-                </td>
-                <td className="p-3">
+                <td className="p-3">{formatActivityTime(m.last_active_at)}</td>
+                <td className="p-3">{formatActivityTime(signInMap.get(m.id) || null)}</td>
+                <td className="p-3 space-y-2">
                   <form action={approve} className="inline">
                     <input type="hidden" name="userId" value={m.id} />
                     <input type="hidden" name="approved" value={(!m.approved).toString()} />
@@ -154,6 +171,23 @@ export default async function ManagersPage() {
                     >
                       {m.approved ? 'Деактивировать' : 'Одобрить'}
                     </button>
+                  </form>
+
+                  <form action={setDepartment} className="flex items-center gap-2">
+                    <input type="hidden" name="userId" value={m.id} />
+                    <select
+                      name="departmentId"
+                      defaultValue={m.department_id || ''}
+                      className="text-sm border rounded px-2 py-1"
+                      onChange={(e) => {
+                        e.target.form?.requestSubmit()
+                      }}
+                    >
+                      <option value="">Без отдела</option>
+                      {departments?.map((d) => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
                   </form>
                 </td>
               </tr>
@@ -180,7 +214,7 @@ export default async function ManagersPage() {
             <div className="text-xs text-gray-500">
               Вход: {formatActivityTime(signInMap.get(m.id) || null)}
             </div>
-            <div className="mt-3">
+            <div className="mt-3 space-y-2">
               <form action={approve} className="inline">
                 <input type="hidden" name="userId" value={m.id} />
                 <input type="hidden" name="approved" value={(!m.approved).toString()} />
@@ -190,6 +224,23 @@ export default async function ManagersPage() {
                 >
                   {m.approved ? 'Деактивировать' : 'Одобрить'}
                 </button>
+              </form>
+
+              <form action={setDepartment} className="flex items-center gap-2">
+                <input type="hidden" name="userId" value={m.id} />
+                <select
+                  name="departmentId"
+                  defaultValue={m.department_id || ''}
+                  className="w-full text-sm border rounded px-2 py-2"
+                  onChange={(e) => {
+                    e.target.form?.requestSubmit()
+                  }}
+                >
+                  <option value="">Без отдела</option>
+                  {departments?.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
               </form>
             </div>
           </div>

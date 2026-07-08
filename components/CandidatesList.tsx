@@ -98,14 +98,24 @@ export default function CandidatesList({ candidates, statusFilter }: CandidatesL
 
         <div className="md:hidden space-y-3">
         {candidates?.map((c) => (
-          <button
+          <div
             key={c.id}
             onClick={() => setSelectedId(c.id)}
-            className="block w-full text-left bg-white border rounded-lg p-4 hover:shadow-md transition"
+            className="block w-full text-left bg-white border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+            role="button"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-blue-600 font-medium">{c.phone}</span>
+                <button
+                  type="button"
+                  className="text-blue-600 font-medium"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedId(c.id)
+                  }}
+                >
+                  {c.phone}
+                </button>
                 <PhoneActionsMenu
                   phone={c.phone}
                   telegramUsername={c.telegram_username}
@@ -127,7 +137,7 @@ export default function CandidatesList({ candidates, statusFilter }: CandidatesL
             <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
               <span>{c.city_from || '—'} → {c.city_to || '—'}</span>
             </div>
-          </button>
+          </div>
         ))}
       </div>
 

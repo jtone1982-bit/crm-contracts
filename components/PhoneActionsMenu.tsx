@@ -51,7 +51,17 @@ export function PhoneActionsMenu({
 
   return (
     <div className="relative inline-block" ref={wrapperRef}>
-      <div onClick={() => setOpen((v) => !v)} className="cursor-pointer">{children}</div>
+      <div
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen((v) => !v)
+        }}
+        className="cursor-pointer"
+        role="button"
+        aria-label="Действия с номером"
+      >
+        {children}
+      </div>
 
       {open && (
         <div className="absolute z-40 mt-1 w-56 bg-white border rounded-lg shadow-lg py-1">

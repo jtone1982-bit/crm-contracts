@@ -101,5 +101,7 @@ export interface Candidate {
   created_at?: string
   last_activity_at?: string | null
   last_manager_login_at?: string | null
+  department_id?: string | null
   candidate_files?: CandidateFile[]
+  manager?: { full_name?: string | null }
 }
