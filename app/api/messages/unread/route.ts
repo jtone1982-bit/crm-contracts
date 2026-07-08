@@ -1,7 +1,11 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const general = searchParams.get('general') === 'true'
+  const receiverId = searchParams.get('receiverId')
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -12,22 +16,28 @@ export async function GET() {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('messages')
-    .select('id, is_general, receiver_id')
+    .select('id, is_general, receiver_id, sender_id, read_at', { count: 'exact' })
     .neq('sender_id', user.id)
     .is('read_at', null)
-    .or(`is_general.eq.true,receiver_id.eq.${user.id}`)
+
+  if (general) {
+    query = query.eq('is_general', true)
+  } else if (receiverId) {
+    query = query.eq('is_general', false).eq('sender_id', receiverId)
+  } else {
+    query = query.eq('is_general', false).eq('receiver_id', user.id)
+  }
+
+  const { count, error } = await query
 
   if (error) {
     console.error('[messages/unread] error', error.message)
     return NextResponse.json({ error: 'Не удалось загрузить счётчик' }, { status: 500 })
   }
 
-  const general = data?.filter((m) => m.is_general).length || 0
-  const private_ = data?.filter((m) => !m.is_general).length || 0
-
-  return NextResponse.json({ general, private: private_, total: general + private_ })
+  return NextResponse.json({ general: general ? count || 0 : 0, private: !general ? count || 0 : 0, total: count || 0 })
 }
 
 export async function POST(request: Request) {
@@ -56,7 +66,7 @@ export async function POST(request: Request) {
   } else if (receiverId) {
     query = query.eq('is_general', false).eq('sender_id', receiverId)
   } else {
-    query = query.or(`is_general.eq.true,receiver_id.eq.${user.id}`)
+    query = query.eq('is_general', false).eq('receiver_id', user.id)
   }
 
   const { error } = await query

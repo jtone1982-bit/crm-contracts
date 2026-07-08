@@ -4,10 +4,13 @@ import { useEffect, useState, useCallback } from 'react'
 
 export default function UnreadBadge({ generalOnly = false }: { generalOnly?: boolean }) {
   const [count, setCount] = useState(0)
+  const [mounted, setMounted] = useState(false)
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/messages/unread')
+      const params = new URLSearchParams()
+      if (generalOnly) params.append('general', 'true')
+      const res = await fetch(`/api/messages/unread?${params.toString()}`)
       const data = await res.json()
       setCount(generalOnly ? data.general || 0 : data.total || 0)
     } catch (e) {
@@ -16,21 +19,30 @@ export default function UnreadBadge({ generalOnly = false }: { generalOnly?: boo
   }, [generalOnly])
 
   useEffect(() => {
+    setMounted(true)
     load()
-    const interval = setInterval(load, 5000)
+    const interval = setInterval(load, 3000)
 
     function handleRefresh() {
       load()
     }
 
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') {
+        load()
+      }
+    }
+
     window.addEventListener('refresh-unread', handleRefresh)
+    document.addEventListener('visibilitychange', handleVisibility)
     return () => {
       clearInterval(interval)
       window.removeEventListener('refresh-unread', handleRefresh)
+      document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [load])
 
-  if (count === 0) return null
+  if (!mounted || count === 0) return null
 
   return (
     <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full min-w-[1.25rem]">
