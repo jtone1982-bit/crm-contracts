@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { formatActivityTime, formatRelativeTime } from '@/lib/datetime'
+import { ManagerDepartmentSelect } from '@/components/ManagerDepartmentSelect'
 
 export default async function ManagersPage() {
   const supabase = await createClient()
@@ -80,32 +81,6 @@ export default async function ManagersPage() {
     revalidatePath('/admin/managers')
   }
 
-  async function setDepartment(formData: FormData) {
-    'use server'
-    const userId = formData.get('userId') as string
-    const departmentId = formData.get('departmentId') as string
-
-    const adminSupabase = await createClient()
-    await adminSupabase
-      .from('profiles')
-      .update({ department_id: departmentId || null })
-      .eq('id', userId)
-
-    if (departmentId) {
-      await adminSupabase
-        .from('candidates')
-        .update({ department_id: departmentId })
-        .eq('manager_id', userId)
-    } else {
-      await adminSupabase
-        .from('candidates')
-        .update({ department_id: null })
-        .eq('manager_id', userId)
-    }
-
-    revalidatePath('/admin/managers')
-  }
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Менеджеры</h1>
@@ -173,22 +148,11 @@ export default async function ManagersPage() {
                     </button>
                   </form>
 
-                  <form action={setDepartment} className="flex items-center gap-2">
-                    <input type="hidden" name="userId" value={m.id} />
-                    <select
-                      name="departmentId"
-                      defaultValue={m.department_id || ''}
-                      className="text-sm border rounded px-2 py-1"
-                      onChange={(e) => {
-                        e.target.form?.requestSubmit()
-                      }}
-                    >
-                      <option value="">Без отдела</option>
-                      {departments?.map((d) => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
-                    </select>
-                  </form>
+                  <ManagerDepartmentSelect
+                    userId={m.id}
+                    departmentId={m.department_id}
+                    departments={departments || []}
+                  />
                 </td>
               </tr>
             ))}
@@ -226,22 +190,11 @@ export default async function ManagersPage() {
                 </button>
               </form>
 
-              <form action={setDepartment} className="flex items-center gap-2">
-                <input type="hidden" name="userId" value={m.id} />
-                <select
-                  name="departmentId"
-                  defaultValue={m.department_id || ''}
-                  className="w-full text-sm border rounded px-2 py-2"
-                  onChange={(e) => {
-                    e.target.form?.requestSubmit()
-                  }}
-                >
-                  <option value="">Без отдела</option>
-                  {departments?.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              </form>
+              <ManagerDepartmentSelect
+                userId={m.id}
+                departmentId={m.department_id}
+                departments={departments || []}
+              />
             </div>
           </div>
         ))}
