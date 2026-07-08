@@ -151,15 +151,15 @@ export default function CandidateModal({ candidateId, onClose, statuses }: Candi
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 p-0 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-0 sm:p-4 overflow-hidden"
     >
-      <div className="bg-white w-full sm:max-w-3xl sm:rounded-lg shadow-xl min-h-full sm:min-h-0">
-        <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between sm:rounded-t-lg">
-          <h2 className="text-lg font-bold">Карточка кандидата</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">×</button>
+      <div className="bg-white w-full sm:max-w-3xl sm:rounded-lg shadow-xl flex flex-col max-h-[100dvh] sm:max-h-[90vh]">
+        <div className="flex-shrink-0 bg-white border-b px-4 py-3 flex items-center justify-between sm:rounded-t-lg">
+          <h2 className="text-lg font-bold truncate pr-4">Карточка кандидата</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none p-1">×</button>
         </div>
 
-        <div className="p-4">
+        <div className="flex-1 overflow-y-auto p-4">
           {loading && <div className="py-8 text-center text-gray-500">Загрузка...</div>}
 
           {!loading && candidate && (
