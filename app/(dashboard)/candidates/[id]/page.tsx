@@ -3,18 +3,25 @@ import { redirect, notFound } from 'next/navigation'
 import { CandidateForm } from '@/components/CandidateForm'
 import { PIPELINE_STATUSES } from '@/lib/types'
 
-export default async function CandidatePage({ params }: { params: { id: string } }) {
+export default async function CandidatePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+  if (!user) {
+    redirect('/login')
+  }
 
-  let query = supabase
-    .from('candidates')
-    .select('*, candidate_files(id, file_type, file_url, file_name)')
-    .eq('id', params.id)
+  const { data: profile } = await supabase.from('profiles').select('role, id').eq('id', user.id).single()
+
+  if (!profile) {
+    redirect('/login')
+  }
+
+  let query = supabase.from('candidates').select('*').eq('id', id)
 
   if (profile.role === 'manager') {
     query = query.eq('manager_id', profile.id)
@@ -29,6 +36,16 @@ export default async function CandidatePage({ params }: { params: { id: string }
 
   if (!candidate) {
     notFound()
+  }
+
+  const { data: candidateFiles } = await supabase
+    .from('candidate_files')
+    .select('id, file_type, file_url, file_name')
+    .eq('candidate_id', id)
+
+  const candidateWithFiles = {
+    ...candidate,
+    candidate_files: candidateFiles || [],
   }
 
   async function updateCandidate(formData: FormData) {
@@ -60,8 +77,8 @@ export default async function CandidatePage({ params }: { params: { id: string }
     values.is_commissioned = formData.get('is_commissioned') === 'on'
 
     const client = await createClient()
-    await client.from('candidates').update(values).eq('id', params.id)
-    redirect(`/candidates/${params.id}`)
+    await client.from('candidates').update(values).eq('id', id)
+    redirect(`/candidates/${id}`)
   }
 
   return (
@@ -71,7 +88,7 @@ export default async function CandidatePage({ params }: { params: { id: string }
         <a href="/" className="text-blue-600 hover:underline">← Назад</a>
       </div>
 
-      <CandidateForm candidate={candidate} statuses={PIPELINE_STATUSES.slice()} onSubmit={updateCandidate} />
+      <CandidateForm candidate={candidateWithFiles} statuses={PIPELINE_STATUSES.slice()} onSubmit={updateCandidate} />
     </div>
   )
 }
