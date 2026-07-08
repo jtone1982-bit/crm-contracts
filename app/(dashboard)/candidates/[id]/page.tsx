@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { redirect, notFound } from 'next/navigation'
 import { CandidateForm } from '@/components/CandidateForm'
 import { PIPELINE_STATUSES } from '@/lib/types'
+import StatusHistory from '@/components/StatusHistory'
 
 export default async function CandidatePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -22,12 +23,18 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
   const { data: candidate, error: candidateError } = await query.maybeSingle()
   if (candidateError || !candidate) notFound()
 
-  const { data: candidateFiles } = await supabase
+  const candidateFiles = await supabase
     .from('candidate_files')
     .select('id, file_type, file_url, file_name')
     .eq('candidate_id', id)
 
   const candidateWithFiles = { ...candidate, candidate_files: candidateFiles || [] }
+
+  const { data: history } = await supabase
+    .from('candidate_status_history')
+    .select('id, old_status, new_status, changed_at, profiles(full_name)')
+    .eq('candidate_id', id)
+    .order('changed_at', { ascending: false })
 
   async function updateCandidate(formData: FormData) {
     'use server'
@@ -55,7 +62,23 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
     }
 
     const client = await createClient()
+    const { data: { user } } = await client.auth.getUser()
+    if (!user) redirect('/login')
+
+    const oldStatus = candidate.status
+    const newStatus = values.status
+
     await client.from('candidates').update(values).eq('id', id)
+
+    if (oldStatus !== newStatus) {
+      await client.from('candidate_status_history').insert({
+        candidate_id: id,
+        old_status: oldStatus,
+        new_status: newStatus,
+        changed_by: user.id,
+      })
+    }
+
     redirect(`/candidates/${id}`)
   }
 
@@ -66,6 +89,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
         <a href="/" className="text-blue-600 hover:underline">← Назад</a>
       </div>
       <CandidateForm candidate={candidateWithFiles} statuses={PIPELINE_STATUSES.slice()} onSubmit={updateCandidate} />
+      <StatusHistory history={history || []} />
     </div>
   )
 }
