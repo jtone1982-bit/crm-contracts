@@ -3,12 +3,17 @@ import { getSupabaseAdmin } from '@/lib/supabase'
 
 function normalizePhone(raw: any): string {
   if (!raw) return ''
-  const s = String(raw).replace(/\D/g, '')
-  if (s.startsWith('8') && s.length === 11) return '+7' + s.slice(1)
-  if (s.startsWith('9') && s.length === 10) return '+7' + s
-  if (s.startsWith('7') && s.length === 11) return '+' + s
-  if (s) return '+' + s
-  return ''
+  let s = String(raw).replace(/\D/g, '')
+  // Remove leading 8 and replace with 7 for Russian numbers
+  if (s.startsWith('8') && s.length === 11) s = '7' + s.slice(1)
+  // Add Russian country code if starts with 9 (10 digits)
+  if (s.startsWith('9') && s.length === 10) s = '7' + s
+  if (s.length === 0) return ''
+  return '+' + s
+}
+
+function normalizeExistingPhone(phone: string): string {
+  return normalizePhone(phone)
 }
 
 export async function POST(request: Request) {
@@ -54,14 +59,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No active managers', imported: 0 }, { status: 400 })
     }
 
-    // Check duplicate
+    // Check duplicate against normalized phones
     const { data: existing } = await getSupabaseAdmin()
       .from('candidates')
-      .select('id')
-      .eq('phone', phone)
-      .limit(1)
+      .select('id, phone')
+      .limit(1000)
 
-    if (existing && existing.length > 0) {
+    const isDuplicate = existing?.some((c) => normalizeExistingPhone(c.phone) === phone) ?? false
+
+    if (isDuplicate) {
       return NextResponse.json({ imported: 0, duplicate: true, phone })
     }
 

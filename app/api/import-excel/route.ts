@@ -4,6 +4,15 @@ import * as XLSX from 'xlsx'
 
 export async function POST(request: Request) {
   try {
+    function normalizePhone(raw: any): string {
+      if (!raw) return ''
+      let s = String(raw).replace(/\D/g, '')
+      if (s.startsWith('8') && s.length === 11) s = '7' + s.slice(1)
+      if (s.startsWith('9') && s.length === 10) s = '7' + s
+      if (s.length === 0) return ''
+      return '+' + s
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     if (!file) {
@@ -29,7 +38,7 @@ export async function POST(request: Request) {
     for (let i = 1; i < rows.length; i++) {
       const raw = rows[i][phoneIdx]
       if (!raw) continue
-      const phone = String(raw).trim()
+      const phone = normalizePhone(raw)
       if (phone) phones.push(phone)
     }
 
@@ -51,7 +60,7 @@ export async function POST(request: Request) {
 
     // Get existing phones
     const { data: existing } = await getSupabaseAdmin().from('candidates').select('phone')
-    const existingPhones = new Set(existing?.map((c) => c.phone) || [])
+    const existingPhones = new Set((existing?.map((c) => normalizePhone(c.phone)) || []).filter(Boolean))
 
     const newPhones = phones.filter((p) => !existingPhones.has(p))
 

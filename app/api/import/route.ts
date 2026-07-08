@@ -6,6 +6,15 @@ const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!
 const PHONE_COLUMN = 'B'
 const CRM_STATUS_COLUMN = 'Q' // new column for CRM status
 
+function normalizePhone(raw: any): string {
+  if (!raw) return ''
+  let s = String(raw).replace(/\D/g, '')
+  if (s.startsWith('8') && s.length === 11) s = '7' + s.slice(1)
+  if (s.startsWith('9') && s.length === 10) s = '7' + s
+  if (s.length === 0) return ''
+  return '+' + s
+}
+
 export async function GET() {
   const sheets = getGoogleSheetsClient()
 
@@ -49,14 +58,15 @@ export async function GET() {
 
   // Get existing phones to avoid duplicates
   const { data: existing } = await getSupabaseAdmin().from('candidates').select('phone')
-  const existingPhones = new Set(existing?.map((c) => c.phone) || [])
+  const existingPhones = new Set((existing?.map((c) => normalizePhone(c.phone)) || []).filter(Boolean))
 
   const newPhones: string[] = []
   const sheetUpdates: { row: number; value: string }[] = []
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i]
-    const phone = row[phoneIdx]?.toString().trim()
+    const rawPhone = row[phoneIdx]?.toString().trim()
+    const phone = normalizePhone(rawPhone)
     const crmStatus = crmStatusIdx >= 0 ? row[crmStatusIdx]?.toString().trim() : ''
 
     if (!phone || crmStatus === 'забрано' || existingPhones.has(phone)) continue
