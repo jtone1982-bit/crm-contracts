@@ -31,6 +31,7 @@ export async function GET() {
 
   return NextResponse.json({
     email: user.email,
+    role: profile?.role || null,
     user_metadata: user.user_metadata || {},
     last_active_at: profile?.last_active_at || null,
     last_sign_in_at: authUser?.last_sign_in_at || null,

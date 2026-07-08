@@ -24,7 +24,7 @@ export default function NewsPage() {
     fetch('/api/profile')
       .then((r) => r.json())
       .then((data) => {
-        setIsAdmin(data.user_metadata?.role === 'admin' || false)
+        setIsAdmin(data.role === 'admin' || false)
       })
   }, [])
 
