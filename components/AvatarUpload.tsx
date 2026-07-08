@@ -20,7 +20,7 @@ export default function AvatarUpload({ currentUrl, onUpload }: AvatarUploadProps
     formData.append('file', file)
 
     try {
-      const res = await fetch('/api/files/upload', {
+      const res = await fetch('/api/profile/avatar', {
         method: 'POST',
         body: formData,
       })
