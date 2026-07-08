@@ -13,8 +13,17 @@ interface Message {
   content: string
   created_at: string
   attachment_url?: string | null
-  sender: { id: string; full_name: string | null; last_active_at?: string | null } | null
+  sender: { id: string; full_name: string | null; avatar_url?: string | null; last_active_at?: string | null } | null
   receiver: { id: string; full_name: string | null; last_active_at?: string | null } | null
+}
+
+function Avatar({ url }: { url?: string | null }) {
+  if (!url) return (
+    <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-[10px] text-gray-600">?</div>
+  )
+  return (
+    <img src={url} alt="" className="w-6 h-6 rounded-full object-cover" />
+  )
 }
 
 export default function GeneralChatPage() {
@@ -121,7 +130,8 @@ export default function GeneralChatPage() {
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
-              <div className="text-xs font-medium mb-1">
+              <div className="text-xs font-medium mb-1 flex items-center gap-1">
+                <Avatar url={m.sender?.avatar_url} />
                 {m.sender?.full_name || 'Пользователь'}
                 {m.sender?.id && (
                   <span className="ml-2 text-gray-400 font-normal">

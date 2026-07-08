@@ -17,13 +17,13 @@ async function loadProfiles(supabase: Awaited<ReturnType<typeof createClient>>, 
 
   const firstQuery = await (supabase
     .from('profiles')
-    .select('id, full_name, last_active_at')
+    .select('id, full_name, last_active_at, avatar_url')
     .in('id', ids) as any)
 
   profiles = firstQuery.data
   error = firstQuery.error
 
-  if (error?.message?.includes('last_active_at')) {
+  if (error?.message?.includes('last_active_at') || error?.message?.includes('avatar_url')) {
     const fallback = await (supabase.from('profiles').select('id, full_name').in('id', ids) as any)
     profiles = fallback.data
     error = fallback.error
@@ -34,8 +34,8 @@ async function loadProfiles(supabase: Awaited<ReturnType<typeof createClient>>, 
     return new Map<string, { full_name: string | null; last_active_at: string | null }>()
   }
 
-  return new Map<string, { full_name: string | null; last_active_at: string | null }>(
-    (profiles || []).map((p: any) => [p.id, { full_name: p.full_name ?? null, last_active_at: p.last_active_at ?? null }])
+  return new Map<string, { full_name: string | null; last_active_at: string | null; avatar_url: string | null }>(
+    (profiles || []).map((p: any) => [p.id, { full_name: p.full_name ?? null, last_active_at: p.last_active_at ?? null, avatar_url: p.avatar_url ?? null }])
   )
 }
 
