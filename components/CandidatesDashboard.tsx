@@ -59,6 +59,9 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
               <Link href="/calendar" className="px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
                 Календарь
               </Link>
+              <Link href="/tools" className="px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
+                Инструменты
+              </Link>
               <Link href="/messages" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 flex items-center">
                 Чат
                 <UnreadBadge />
