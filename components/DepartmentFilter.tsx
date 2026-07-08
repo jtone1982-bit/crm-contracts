@@ -14,11 +14,25 @@ interface DepartmentFilterProps {
 
 export function DepartmentFilter({ value, onChange }: DepartmentFilterProps) {
   const [departments, setDepartments] = useState<Department[]>([])
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetch('/api/admin/departments')
-      .then((r) => r.json())
-      .then((data) => setDepartments(data || []))
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}))
+          throw new Error(data.error || `HTTP ${r.status}`)
+        }
+        return r.json()
+      })
+      .then((data) => {
+        setDepartments(data || [])
+        setError('')
+      })
+      .catch((e) => {
+        console.error('[DepartmentFilter] failed to load departments', e)
+        setError('')
+      })
   }, [])
 
   return (

@@ -22,7 +22,8 @@ export default async function ManagersPage() {
   }
 
   const { data: managers } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
-  const { data: departments } = await supabase.from('departments').select('*').order('name')
+  const { data: departments, error: deptError } = await supabase.from('departments').select('*').order('name')
+  if (deptError) console.error('departments fetch error', deptError.message)
 
   const serviceSupabase = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

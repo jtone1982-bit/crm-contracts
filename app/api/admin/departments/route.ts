@@ -17,6 +17,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { data: departments } = await supabase.from('departments').select('*').order('name')
+  const { data: departments, error } = await supabase.from('departments').select('*').order('name')
+
+  if (error) {
+    console.error('[admin/departments] error', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
   return NextResponse.json(departments || [])
 }
