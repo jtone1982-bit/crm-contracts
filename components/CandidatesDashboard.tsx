@@ -56,6 +56,9 @@ export default function CandidatesDashboard({ profile }: { profile: Profile }) {
               <Link href="/admin/managers" className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
                 Менеджеры
               </Link>
+              <Link href="/calendar" className="px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
+                Календарь
+              </Link>
               <Link href="/messages" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 flex items-center">
                 Чат
                 <UnreadBadge />

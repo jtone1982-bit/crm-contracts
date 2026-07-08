@@ -34,6 +34,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
             Сообщения
             <UnreadBadge />
           </Link>
+          <Link href="/calendar" className="text-gray-700 hover:text-blue-600">
+            Календарь
+          </Link>
           <Link href="/profile" className="text-gray-700 hover:text-blue-600">
             Профиль
           </Link>
