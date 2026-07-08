@@ -235,9 +235,18 @@ export function CandidateForm({ candidate, statuses, onSubmit }: CandidateFormPr
             { key: 'scar_photo', label: 'Фото шрамов' },
             { key: 'document_scan', label: 'Сканы документов' },
           ].map(({ key, label }) => (
-            <div key={key} className="space-y-1">
+            <div key={key} className="space-y-2">
               <label className="block text-sm font-medium">{label}</label>
-              <input type="file" multiple onChange={(e) => uploadFiles(key, e.target.files)} disabled={uploading} className="w-full text-sm" />
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-500 disabled:opacity-50">
+                <input
+                  type="file"
+                  className="hidden"
+                  multiple
+                  onChange={(e) => uploadFiles(key, e.target.files)}
+                  disabled={uploading}
+                />
+                {uploading ? 'Загрузка...' : 'Загрузить файл'}
+              </label>
             </div>
           ))}
         </div>
