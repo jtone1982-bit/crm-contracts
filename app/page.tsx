@@ -13,5 +13,7 @@ export default async function DashboardPage() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (!profile) redirect('/login')
 
-  return <CandidatesDashboard profile={profile} />
+  const { data: departments } = await supabase.from('departments').select('*').order('name')
+
+  return <CandidatesDashboard profile={profile} departments={departments || []} />
 }

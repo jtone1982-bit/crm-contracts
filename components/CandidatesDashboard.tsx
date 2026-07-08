@@ -14,7 +14,7 @@ interface Profile {
   role: string
 }
 
-export default function CandidatesDashboard({ profile }: { profile: Profile }) {
+export default function CandidatesDashboard({ profile, departments }: { profile: Profile; departments: { id: string; name: string }[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [departmentId, setDepartmentId] = useState<string | undefined>(undefined)
@@ -91,7 +91,7 @@ export default function CandidatesDashboard({ profile }: { profile: Profile }) {
         />
         {profile.role === 'admin' && (
           <>
-            <DepartmentFilter value={departmentId} onChange={setDepartmentId} />
+            <DepartmentFilter value={departmentId} onChange={setDepartmentId} departments={departments} />
             <div className="w-full sm:w-64">
               <ManagerSearch
                 value={managerName}

@@ -10,30 +10,22 @@ interface Department {
 interface DepartmentFilterProps {
   value?: string
   onChange: (departmentId: string | undefined) => void
+  departments?: { id: string; name: string }[]
 }
 
-export function DepartmentFilter({ value, onChange }: DepartmentFilterProps) {
-  const [departments, setDepartments] = useState<Department[]>([])
-  const [error, setError] = useState('')
+export function DepartmentFilter({ value, onChange, departments: departmentsProp }: DepartmentFilterProps) {
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>(departmentsProp || [])
 
   useEffect(() => {
+    if (departmentsProp) {
+      setDepartments(departmentsProp)
+      return
+    }
     fetch('/api/admin/departments')
-      .then(async (r) => {
-        if (!r.ok) {
-          const data = await r.json().catch(() => ({}))
-          throw new Error(data.error || `HTTP ${r.status}`)
-        }
-        return r.json()
-      })
-      .then((data) => {
-        setDepartments(data || [])
-        setError('')
-      })
-      .catch((e) => {
-        console.error('[DepartmentFilter] failed to load departments', e)
-        setError('')
-      })
-  }, [])
+      .then((r) => r.json())
+      .then((data) => setDepartments(data || []))
+      .catch((e) => console.error('[DepartmentFilter] failed to load', e))
+  }, [departmentsProp])
 
   return (
     <select
