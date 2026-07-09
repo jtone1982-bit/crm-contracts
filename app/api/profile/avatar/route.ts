@@ -31,14 +31,14 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const { data, error } = await serviceSupabase.storage.from('chat-files').upload(path, file)
+  const { data, error } = await serviceSupabase.storage.from('avatars').upload(path, file)
 
   if (error) {
     console.error('[avatar upload] error', error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const { data: publicUrlData } = serviceSupabase.storage.from('chat-files').getPublicUrl(data.path)
+  const { data: publicUrlData } = serviceSupabase.storage.from('avatars').getPublicUrl(data.path)
 
   return NextResponse.json({ url: publicUrlData.publicUrl })
 }
