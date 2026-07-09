@@ -95,6 +95,18 @@ export function CandidateForm({ candidate, statuses, onSubmit }: CandidateFormPr
     }
   }
 
+  async function deleteFile(fileId: string) {
+    if (!confirm('Удалить файл?')) return
+    const res = await fetch(`/api/files/delete?id=${encodeURIComponent(fileId)}`, { method: 'DELETE' })
+    if (res.ok) {
+      setFiles((prev) => prev.filter((f) => f.id !== fileId))
+      router.refresh()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error || 'Ошибка удаления')
+    }
+  }
+
   function renderSelect(name: string, options: string[], value?: string | null, label?: string) {
     return (
       <div className="space-y-1">
@@ -218,15 +230,26 @@ export function CandidateForm({ candidate, statuses, onSubmit }: CandidateFormPr
         {files.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {files.map((file) => (
-              <a
+              <div
                 key={file.id}
-                href={file.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:underline border p-2 rounded"
+                className="flex items-center justify-between text-sm border p-2 rounded"
               >
-                {file.file_type}: {file.file_name}
-              </a>
+                <a
+                  href={file.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline truncate mr-2"
+                >
+                  {file.file_type}: {file.file_name}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => deleteFile(file.id)}
+                  className="text-red-600 hover:text-red-800 shrink-0"
+                >
+                  Удалить
+                </button>
+              </div>
             ))}
           </div>
         )}
