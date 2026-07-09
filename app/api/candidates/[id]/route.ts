@@ -63,9 +63,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
   }
 
-  // Parse JSON arrays from form data strings
-  const diseases = body.diseases ? JSON.parse(body.diseases) : body.diseases === '' ? null : undefined
-  const documents = body.documents ? JSON.parse(body.documents) : body.documents === '' ? null : undefined
+  // Parse JSON arrays from form data strings safely
+  function safeParse(value: any) {
+    if (value === undefined || value === null) return undefined
+    if (value === '') return null
+    try {
+      return JSON.parse(value)
+    } catch {
+      return undefined
+    }
+  }
+  const diseases = safeParse(body.diseases)
+  const documents = safeParse(body.documents)
 
   const update: Record<string, any> = {}
   const fields = [
