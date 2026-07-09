@@ -98,6 +98,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (update[key] === '') update[key] = null
   }
 
+  // Timestamps: convert empty strings to null
+  for (const key of ['departure_date', 'departure_datetime', 'next_contact_date', 'birth_date']) {
+    if (update[key] === '') update[key] = null
+  }
+
   update.last_activity_at = new Date().toISOString()
 
   const { data, error } = await supabase.from('candidates').update(update).eq('id', id).select().single()
