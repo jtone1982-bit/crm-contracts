@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import UnreadBadge from '@/components/UnreadBadge'
 import { useNotifications } from '@/components/NotificationProvider'
@@ -24,42 +24,10 @@ interface Message {
   receiver: { id: string; full_name: string | null } | null
 }
 
-function useUnreadCounts() {
-  const [counts, setCounts] = useState({ general: 0, private: 0, total: 0 })
-
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch('/api/messages/unread')
-      const data = await res.json()
-      setCounts(data)
-    } catch (e) {
-      console.error(e)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-    const interval = setInterval(load, 5000)
-
-    function handleRefresh() {
-      load()
-    }
-
-    window.addEventListener('refresh-unread', handleRefresh)
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener('refresh-unread', handleRefresh)
-    }
-  }, [load])
-
-  return counts
-}
-
 export default function MessagesPage() {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [lastMessages, setLastMessages] = useState<Record<string, Message>>({})
-  const unread = useUnreadCounts()
   const { permission, requestPermission } = useNotifications()
 
   const formatActivity = (date: string | null) => {
