@@ -1,7 +1,16 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
-import RecordRTC, { StereoAudioRecorder } from 'recordrtc'
+
+let RecordRTC: any = null
+let StereoAudioRecorder: any = null
+
+async function loadRecordRTC() {
+  if (RecordRTC) return
+  const mod = await import('recordrtc')
+  RecordRTC = mod.default
+  StereoAudioRecorder = mod.StereoAudioRecorder || RecordRTC.StereoAudioRecorder
+}
 
 interface VoiceRecorderProps {
   onRecorded: (content: string, attachmentUrl: string) => void
@@ -24,7 +33,7 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef<number>(0)
-  const recordRef = useRef<RecordRTC | null>(null)
+  const recordRef = useRef<any | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
   const uploadBlob = useCallback(async (blob: Blob, fallbackType?: string) => {
@@ -125,6 +134,7 @@ export default function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
 
   const startRecordRTC = useCallback(async () => {
     try {
+      await loadRecordRTC()
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
 
