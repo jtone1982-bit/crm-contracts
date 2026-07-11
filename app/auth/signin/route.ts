@@ -3,11 +3,22 @@ import { createClient } from '@/lib/supabase-server'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const formData = await request.formData()
-  const email = formData.get('email')?.toString() || ''
-  const password = formData.get('password')?.toString() || ''
 
-  console.log('[signin] attempt', email)
+  let email = ''
+  let password = ''
+  try {
+    const formData = await request.formData()
+    email = formData.get('email')?.toString() || ''
+    password = formData.get('password')?.toString() || ''
+  } catch {
+    // Fallback for non-multipart/form-data clients
+    const text = await request.text()
+    const params = new URLSearchParams(text)
+    email = params.get('email') || ''
+    password = params.get('password') || ''
+  }
+
+  console.log('[signin] attempt', email, 'password length', password.length)
 
   if (!email || !password) {
     return NextResponse.redirect(
