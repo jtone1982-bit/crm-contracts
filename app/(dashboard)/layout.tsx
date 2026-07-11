@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import UnreadBadge from '@/components/UnreadBadge'
 import Heartbeat from '@/components/Heartbeat'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +31,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="flex items-center gap-4 text-sm">
           <Link href="/messages" className="text-gray-700 hover:text-blue-600 flex items-center">
             Сообщения
-            <UnreadBadge />
           </Link>
           <Link href="/calendar" className="text-gray-700 hover:text-blue-600">
             Календарь

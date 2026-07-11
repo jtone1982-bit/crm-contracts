@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import UnreadBadge from '@/components/UnreadBadge'
 import { useNotifications } from '@/components/NotificationProvider'
 
 interface Profile {
@@ -140,9 +141,7 @@ export default function MessagesPage() {
               <div className="font-medium">Общий чат</div>
               <div className="text-sm text-gray-500">Все пользователи</div>
             </div>
-            {unread.general > 0 && (
-              <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">{unread.general}</span>
-            )}
+            <UnreadBadge generalOnly={true} />
           </div>
         </Link>
 
@@ -171,6 +170,7 @@ export default function MessagesPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <UnreadBadge receiverId={p.id} />
                   <span className="text-xs text-gray-400">
                     {lastMessages[p.id]?.created_at
                       ? new Date(lastMessages[p.id].created_at).toLocaleDateString('ru-RU')
