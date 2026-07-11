@@ -1,24 +1,29 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
-import { cookies } from 'next/headers'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const { email, password } = await request.json()
+  const formData = await request.formData()
+  const email = formData.get('email')?.toString() || ''
+  const password = formData.get('password')?.toString() || ''
 
   console.log('[signin] attempt', email)
+
+  if (!email || !password) {
+    return NextResponse.redirect(
+      new URL('/login?error=' + encodeURIComponent('Email и пароль обязательны'), request.url)
+    )
+  }
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error || !data.user || !data.session) {
     console.error('[signin] error', error?.message || 'no session')
-    return NextResponse.json({ error: error?.message || 'Auth failed' }, { status: 400 })
+    return NextResponse.redirect(
+      new URL('/login?error=' + encodeURIComponent(error?.message || 'Ошибка входа'), request.url)
+    )
   }
 
-  // Let @supabase/ssr set its own chunked cookies on the response via setAll
-  // We trigger a no-op set to flush session cookies to the cookie store
-  const cookieStore = await cookies()
-
   console.log('[signin] success', data.user.id)
-  return NextResponse.json({ success: true })
+  return NextResponse.redirect(new URL('/', request.url))
 }

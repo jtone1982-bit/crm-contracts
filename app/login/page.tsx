@@ -122,7 +122,7 @@ export default async function LoginPage({
 
             {error && <div className="error">{error}</div>}
 
-            <form action="/api/auth" method="post">
+            <form action="/auth/signin" method="post">
               <input type="hidden" name="mode" value={isSignUp ? 'signup' : 'login'} />
               <div>
                 <label htmlFor="email">Email</label>
