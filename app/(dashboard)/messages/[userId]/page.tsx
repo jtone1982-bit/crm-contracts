@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import EmojiPickerButton from '@/components/EmojiPickerButton'
@@ -38,6 +38,13 @@ export default function PrivateChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const markRead = useCallback(async () => {
+    try {
+      await fetch(`/api/messages/unread?receiverId=${receiverId}`, { method: 'POST' })
+      window.dispatchEvent(new CustomEvent('refresh-unread'))
+    } catch {}
+  }, [receiverId])
+
   const loadMessages = async (q = '') => {
     const params = new URLSearchParams()
     params.set('receiverId', receiverId)
@@ -45,6 +52,7 @@ export default function PrivateChatPage() {
     const res = await fetch(`/api/messages?${params.toString()}`)
     const data = await res.json()
     setMessages(data.messages || [])
+    markRead()
   }
 
   useEffect(() => {
@@ -53,12 +61,6 @@ export default function PrivateChatPage() {
       .then((data) => setCurrentUserId(data.user_metadata?.sub || ''))
     loadMessages()
     const interval = setInterval(() => loadMessages(search), 5000)
-
-    fetch(`/api/messages/unread?receiverId=${receiverId}`, { method: 'POST' })
-      .then(() => {
-        setTimeout(() => window.dispatchEvent(new CustomEvent('refresh-unread')), 100)
-      })
-      .catch(() => {})
 
     return () => clearInterval(interval)
   }, [receiverId, search])

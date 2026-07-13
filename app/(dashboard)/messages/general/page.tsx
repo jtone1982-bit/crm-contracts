@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import EmojiPickerButton from '@/components/EmojiPickerButton'
 import MessageContent from '@/components/MessageContent'
@@ -34,6 +34,13 @@ export default function GeneralChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const markRead = useCallback(async () => {
+    try {
+      await fetch('/api/messages/unread?general=true', { method: 'POST' })
+      window.dispatchEvent(new CustomEvent('refresh-unread'))
+    } catch {}
+  }, [])
+
   const loadMessages = async (q = '') => {
     const params = new URLSearchParams()
     params.set('general', 'true')
@@ -41,6 +48,7 @@ export default function GeneralChatPage() {
     const res = await fetch(`/api/messages?${params.toString()}`)
     const data = await res.json()
     setMessages(data.messages || [])
+    markRead()
   }
 
   useEffect(() => {
@@ -49,12 +57,6 @@ export default function GeneralChatPage() {
       .then((data) => setCurrentUserId(data.user_metadata?.sub || ''))
     loadMessages()
     const interval = setInterval(() => loadMessages(search), 5000)
-
-    fetch('/api/messages/unread?general=true', { method: 'POST' })
-      .then(() => {
-        setTimeout(() => window.dispatchEvent(new CustomEvent('refresh-unread')), 100)
-      })
-      .catch(() => {})
 
     return () => clearInterval(interval)
   }, [search])
