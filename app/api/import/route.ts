@@ -3,8 +3,8 @@ import { getGoogleSheetsClient } from '@/lib/google'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!
-const PHONE_COLUMN = 'B'
-const CRM_STATUS_COLUMN = 'Q' // new column for CRM status
+const CRM_STATUS_HEADER = 'CRM статус'
+const STATUS_MARK = 'забрано'
 
 function normalizePhone(raw: any): string {
   if (!raw) return ''
@@ -15,33 +15,55 @@ function normalizePhone(raw: any): string {
   return '+' + s
 }
 
+function colLetter(idx: number): string {
+  let s = ''
+  let n = idx
+  do {
+    s = String.fromCharCode(65 + (n % 26)) + s
+    n = Math.floor(n / 26) - 1
+  } while (n >= 0)
+  return s
+}
+
 export async function GET() {
   const sheets = getGoogleSheetsClient()
 
-  // Read all rows
-  const res = await sheets.spreadsheets.values.get({
+  // Read first row to find headers (no sheet name = first sheet)
+  const headerRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Лиды!A1:Q',
+    range: 'A1:Z1',
   })
 
-  const rows = res.data.values || []
-  if (rows.length === 0) {
+  const headerRow = headerRes.data.values?.[0] || []
+  if (headerRow.length === 0) {
     return NextResponse.json({ imported: 0 })
   }
 
-  // Find phone column index and CRM status column index
-  const headers = rows[0]
-  const phoneIdx = headers.indexOf('Телефон')
-  const crmStatusIdx = headers.indexOf('CRM статус') === -1 ? -1 : headers.indexOf('CRM статус')
+  let phoneIdx = headerRow.indexOf('Телефон')
+  let crmStatusIdx = headerRow.indexOf(CRM_STATUS_HEADER)
 
-  // If CRM статус column doesn't exist, create it
+  if (phoneIdx === -1) phoneIdx = 1
+
+  // Add CRM status column if missing
   if (crmStatusIdx === -1) {
+    crmStatusIdx = headerRow.length
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Лиды!Q1',
+      range: `${colLetter(crmStatusIdx)}1`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [['CRM статус']] },
+      requestBody: { values: [[CRM_STATUS_HEADER]] },
     })
+  }
+
+  // Read full data
+  const fullRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `A1:${colLetter(crmStatusIdx)}`,
+  })
+
+  const allRows = fullRes.data.values || []
+  if (allRows.length === 0) {
+    return NextResponse.json({ imported: 0 })
   }
 
   // Get active managers
@@ -56,37 +78,59 @@ export async function GET() {
     return NextResponse.json({ error: 'No active managers', imported: 0 }, { status: 400 })
   }
 
-  // Get existing phones to avoid duplicates
+  // Get existing phones
   const { data: existing } = await getSupabaseAdmin().from('candidates').select('phone')
   const existingPhones = new Set((existing?.map((c) => normalizePhone(c.phone)) || []).filter(Boolean))
 
   const newPhones: string[] = []
   const sheetUpdates: { row: number; value: string }[] = []
 
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i]
+  for (let i = 1; i < allRows.length; i++) {
+    const row = allRows[i]
     const rawPhone = row[phoneIdx]?.toString().trim()
     const phone = normalizePhone(rawPhone)
     const crmStatus = crmStatusIdx >= 0 ? row[crmStatusIdx]?.toString().trim() : ''
 
-    if (!phone || crmStatus === 'забрано' || existingPhones.has(phone)) continue
+    if (!phone || crmStatus === STATUS_MARK || existingPhones.has(phone)) continue
 
     newPhones.push(phone)
-    sheetUpdates.push({ row: i + 1, value: 'забрано' })
+    sheetUpdates.push({ row: i + 1, value: STATUS_MARK })
   }
 
   if (newPhones.length === 0) {
     return NextResponse.json({ imported: 0 })
   }
 
-  // Distribute evenly
-  const imports = newPhones.map((phone, idx) => ({
-    phone,
-    manager_id: managers[idx % managers.length].id,
-    status: 'На обзвон',
-    imported_from_sheets: true,
-    sheet_row_index: sheetUpdates[idx]?.row,
-  }))
+  // Distribute by current candidate count (least loaded manager gets next lead)
+  const { data: counts } = await getSupabaseAdmin()
+    .from('candidates')
+    .select('manager_id, count', { count: 'exact' })
+    .in('manager_id', managers.map((m) => m.id))
+
+  const countMap = new Map<string, number>()
+  managers.forEach((m) => countMap.set(m.id, 0))
+  counts?.forEach((c: any) => {
+    countMap.set(c.manager_id, Number(c.count || 0))
+  })
+
+  const imports = newPhones.map((phone) => {
+    let minId = managers[0].id
+    let minCount = Infinity
+    managers.forEach((m) => {
+      const c = countMap.get(m.id) || 0
+      if (c < minCount) {
+        minCount = c
+        minId = m.id
+      }
+    })
+    countMap.set(minId, minCount + 1)
+    return {
+      phone,
+      manager_id: minId,
+      status: 'На обзвон',
+      imported_from_sheets: true,
+    }
+  })
 
   const { error: insertError } = await getSupabaseAdmin().from('candidates').insert(imports)
   if (insertError) {
@@ -94,8 +138,9 @@ export async function GET() {
   }
 
   // Mark as taken in sheet
+  const statusCol = colLetter(crmStatusIdx)
   const updateRequests = sheetUpdates.map((u) => ({
-    range: `Лиды!Q${u.row}`,
+    range: `${statusCol}${u.row}`,
     values: [[u.value]],
   }))
 
