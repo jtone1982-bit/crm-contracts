@@ -6,16 +6,28 @@ export async function POST(request: Request) {
 
   let email = ''
   let password = ''
-  try {
-    const formData = await request.formData()
-    email = formData.get('email')?.toString() || ''
-    password = formData.get('password')?.toString() || ''
-  } catch {
-    // Fallback for non-multipart/form-data clients
-    const text = await request.text()
-    const params = new URLSearchParams(text)
+  let mode = 'login'
+  let fullName = ''
+
+  // Read body once, parse based on content type
+  const contentType = request.headers.get('content-type') || ''
+  const bodyText = await request.text()
+
+  if (contentType.includes('application/json')) {
+    try {
+      const json = JSON.parse(bodyText)
+      email = json.email || ''
+      password = json.password || ''
+      mode = json.mode || 'login'
+      fullName = json.fullName || ''
+    } catch {}
+  } else {
+    // form-urlencoded or multipart — use URLSearchParams on raw text
+    const params = new URLSearchParams(bodyText)
     email = params.get('email') || ''
     password = params.get('password') || ''
+    mode = params.get('mode') || 'login'
+    fullName = params.get('fullName') || ''
   }
 
   console.log('[signin] attempt', email, 'password length', password.length)
