@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase'
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!
 const CRM_STATUS_HEADER = 'CRM статус'
-const STATUS_MARK = 'забрано'
+const STATUS_MARK = 'Забрано'
 
 function normalizePhone(raw: any): string {
   if (!raw) return ''
