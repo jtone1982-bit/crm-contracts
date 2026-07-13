@@ -2,9 +2,21 @@ import { NextResponse } from 'next/server'
 import { getGoogleSheetsClient } from '@/lib/google'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
-const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!
 const CRM_STATUS_HEADER = 'CRM статус'
 const STATUS_MARK = 'Забрано'
+
+// Manager sheets: фамилия → spreadsheet ID
+// Synced with /opt/crm-scripts/chence_to_manager_sheets.py MANAGERS list
+const MANAGER_SHEETS: { name: string; sheetId: string }[] = [
+  { name: 'Зорькина', sheetId: '1339y_T9_mnfyiXHEwpCUa8rhf-OCCIYMgF_eICsxVno' },
+  { name: 'Духина', sheetId: '1MmhqEy5NoYn8ed7fxeP-Od_OOy66xyZtzLHVGwAQSxA' },
+  { name: 'Тян', sheetId: '1m2QLv5IaE9o2d-38-MYgwyzBsGx8TdN7eA13ArCoogs' },
+  { name: 'Карымова', sheetId: '1MUMnGPnWf6aIOnhPF6xRZkj-t9oi90i_ZwoU49O9xbY' },
+  { name: 'Жеребцова', sheetId: '1oObzPpps3l8-8eIfJDnDURO63J421840utPR4yV06nk' },
+  { name: 'Тарасюк', sheetId: '1Y904RUIhMtlCFdWQtJMkcAJwzfD4NwO_FIlxk3udflo' },
+  { name: 'Лаевская', sheetId: '1VxD0fLNKt_TAmjutm1ClhLNzWsv9UuHf46IZJ7mgomc' },
+  { name: 'Абрегова', sheetId: '1YcJGN6Bp_ksb10Ro04HOabexbix5Ghf8NeiR3a8hTtQ' },
+]
 
 function normalizePhone(raw: any): string {
   if (!raw) return ''
@@ -25,132 +37,180 @@ function colLetter(idx: number): string {
   return s
 }
 
+// Extract surname (first word) from full name
+function getSurname(fullName: string): string {
+  if (!fullName) return ''
+  return fullName.trim().split(/\s+/)[0]
+}
+
+// Fuzzy match: check if CRM manager surname matches sheet manager name
+function matchManager(
+  crmManagers: { id: string; full_name: string }[],
+  sheetName: string
+): { id: string; full_name: string } | null {
+  const sheetSurname = sheetName.trim().toLowerCase()
+  for (const m of crmManagers) {
+    const crmSurname = getSurname(m.full_name || '').trim().toLowerCase()
+    if (!crmSurname) continue
+    // Match if CRM surname starts with sheet name or vice versa
+    if (crmSurname === sheetSurname || crmSurname.startsWith(sheetSurname) || sheetSurname.startsWith(crmSurname)) {
+      return m
+    }
+  }
+  return null
+}
+
 export async function GET() {
   const sheets = getGoogleSheetsClient()
 
-  // Read first row to find headers (no sheet name = first sheet)
-  const headerRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: 'A1:Z1',
-  })
-
-  const headerRow = headerRes.data.values?.[0] || []
-  if (headerRow.length === 0) {
-    return NextResponse.json({ imported: 0 })
-  }
-
-  let phoneIdx = headerRow.indexOf('Телефон')
-  let crmStatusIdx = headerRow.indexOf(CRM_STATUS_HEADER)
-
-  if (phoneIdx === -1) phoneIdx = 1
-
-  // Add CRM status column if missing
-  if (crmStatusIdx === -1) {
-    crmStatusIdx = headerRow.length
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${colLetter(crmStatusIdx)}1`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[CRM_STATUS_HEADER]] },
-    })
-  }
-
-  // Read full data
-  const fullRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `A1:${colLetter(crmStatusIdx)}`,
-  })
-
-  const allRows = fullRes.data.values || []
-  if (allRows.length === 0) {
-    return NextResponse.json({ imported: 0 })
-  }
-
-  // Get active managers
-  const { data: managers, error: managersError } = await getSupabaseAdmin()
+  // Get active managers from CRM
+  const { data: crmManagers, error: managersError } = await getSupabaseAdmin()
     .from('profiles')
-    .select('id')
+    .select('id, full_name')
     .eq('role', 'manager')
     .eq('approved', true)
     .eq('active', true)
 
-  if (managersError || !managers || managers.length === 0) {
-    return NextResponse.json({ error: 'No active managers', imported: 0 }, { status: 400 })
+  if (managersError || !crmManagers || crmManagers.length === 0) {
+    return NextResponse.json({ error: 'No active managers in CRM', imported: 0 }, { status: 400 })
   }
 
-  // Get existing phones
+  // Match sheet managers to CRM managers by surname
+  const matchedManagers: { sheetId: string; crmId: string; crmName: string; sheetName: string }[] = []
+  const skippedManagers: string[] = []
+
+  for (const sheetMgr of MANAGER_SHEETS) {
+    const match = matchManager(crmManagers, sheetMgr.name)
+    if (match) {
+      matchedManagers.push({
+        sheetId: sheetMgr.sheetId,
+        crmId: match.id,
+        crmName: match.full_name || '',
+        sheetName: sheetMgr.name,
+      })
+    } else {
+      skippedManagers.push(sheetMgr.name)
+    }
+  }
+
+  if (matchedManagers.length === 0) {
+    return NextResponse.json({
+      error: 'No manager sheets matched CRM managers',
+      skipped: skippedManagers,
+      imported: 0,
+    })
+  }
+
+  // Get existing phones in CRM
   const { data: existing } = await getSupabaseAdmin().from('candidates').select('phone')
   const existingPhones = new Set((existing?.map((c) => normalizePhone(c.phone)) || []).filter(Boolean))
 
-  const newPhones: string[] = []
-  const sheetUpdates: { row: number; value: string }[] = []
+  const allImports: {
+    phone: string
+    manager_id: string
+    status: string
+    imported_from_sheets: boolean
+  }[] = []
 
-  for (let i = 1; i < allRows.length; i++) {
-    const row = allRows[i]
-    const rawPhone = row[phoneIdx]?.toString().trim()
-    const phone = normalizePhone(rawPhone)
-    const crmStatus = crmStatusIdx >= 0 ? row[crmStatusIdx]?.toString().trim() : ''
+  const allSheetUpdates: { sheetId: string; range: string; value: string }[] = []
 
-    if (!phone || crmStatus === STATUS_MARK || existingPhones.has(phone)) continue
+  // Process each matched manager's sheet
+  for (const mgr of matchedManagers) {
+    try {
+      // Read header row
+      const headerRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: mgr.sheetId,
+        range: 'A1:Z1',
+      })
 
-    newPhones.push(phone)
-    sheetUpdates.push({ row: i + 1, value: STATUS_MARK })
-  }
+      const headerRow = headerRes.data.values?.[0] || []
+      if (headerRow.length === 0) continue
 
-  if (newPhones.length === 0) {
-    return NextResponse.json({ imported: 0 })
-  }
+      let phoneIdx = headerRow.indexOf('Телефон')
+      if (phoneIdx === -1) phoneIdx = 1
 
-  // Distribute by current candidate count (least loaded manager gets next lead)
-  const { data: counts } = await getSupabaseAdmin()
-    .from('candidates')
-    .select('manager_id, count', { count: 'exact' })
-    .in('manager_id', managers.map((m) => m.id))
+      let crmStatusIdx = headerRow.indexOf(CRM_STATUS_HEADER)
 
-  const countMap = new Map<string, number>()
-  managers.forEach((m) => countMap.set(m.id, 0))
-  counts?.forEach((c: any) => {
-    countMap.set(c.manager_id, Number(c.count || 0))
-  })
-
-  const imports = newPhones.map((phone) => {
-    let minId = managers[0].id
-    let minCount = Infinity
-    managers.forEach((m) => {
-      const c = countMap.get(m.id) || 0
-      if (c < minCount) {
-        minCount = c
-        minId = m.id
+      // Add CRM status column if missing
+      if (crmStatusIdx === -1) {
+        crmStatusIdx = headerRow.length
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: mgr.sheetId,
+          range: `${colLetter(crmStatusIdx)}1`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [[CRM_STATUS_HEADER]] },
+        })
       }
-    })
-    countMap.set(minId, minCount + 1)
-    return {
-      phone,
-      manager_id: minId,
-      status: 'На обзвон',
-      imported_from_sheets: true,
-    }
-  })
 
-  const { error: insertError } = await getSupabaseAdmin().from('candidates').insert(imports)
+      // Read full data
+      const fullRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: mgr.sheetId,
+        range: `A1:${colLetter(crmStatusIdx)}`,
+      })
+
+      const allRows = fullRes.data.values || []
+      if (allRows.length <= 1) continue
+
+      for (let i = 1; i < allRows.length; i++) {
+        const row = allRows[i]
+        const rawPhone = row[phoneIdx]?.toString().trim()
+        const phone = normalizePhone(rawPhone)
+        const crmStatus = crmStatusIdx >= 0 ? row[crmStatusIdx]?.toString().trim() : ''
+
+        if (!phone || crmStatus === STATUS_MARK || existingPhones.has(phone)) continue
+
+        allImports.push({
+          phone,
+          manager_id: mgr.crmId,
+          status: 'На обзвон',
+          imported_from_sheets: true,
+        })
+
+        allSheetUpdates.push({
+          sheetId: mgr.sheetId,
+          range: `${colLetter(crmStatusIdx)}${i + 1}`,
+          value: STATUS_MARK,
+        })
+      }
+    } catch (err) {
+      console.error(`Error reading sheet for ${mgr.sheetName}:`, err)
+    }
+  }
+
+  if (allImports.length === 0) {
+    return NextResponse.json({
+      imported: 0,
+      matched: matchedManagers.map((m) => m.sheetName),
+      skipped: skippedManagers,
+    })
+  }
+
+  // Insert into CRM
+  const { error: insertError } = await getSupabaseAdmin().from('candidates').insert(allImports)
   if (insertError) {
     return NextResponse.json({ error: insertError.message, imported: 0 }, { status: 500 })
   }
 
-  // Mark as taken in sheet
-  const statusCol = colLetter(crmStatusIdx)
-  const updateRequests = sheetUpdates.map((u) => ({
-    range: `${statusCol}${u.row}`,
-    values: [[u.value]],
-  }))
+  // Mark as taken in each sheet
+  for (const sheetId of new Set(allSheetUpdates.map((u) => u.sheetId))) {
+    const updates = allSheetUpdates.filter((u) => u.sheetId === sheetId)
+    const updateRequests = updates.map((u) => ({
+      range: u.range,
+      values: [[u.value]],
+    }))
 
-  await sheets.spreadsheets.values.batchUpdate({
-    spreadsheetId: SPREADSHEET_ID,
-    requestBody: {
-      valueInputOption: 'USER_ENTERED',
-      data: updateRequests,
-    },
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: sheetId,
+      requestBody: {
+        valueInputOption: 'USER_ENTERED',
+        data: updateRequests,
+      },
+    })
+  }
+
+  return NextResponse.json({
+    imported: allImports.length,
+    matched: matchedManagers.map((m) => m.sheetName),
+    skipped: skippedManagers,
   })
-
-  return NextResponse.json({ imported: imports.length })
 }
