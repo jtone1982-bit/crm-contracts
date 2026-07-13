@@ -32,9 +32,14 @@ export async function POST(request: Request) {
 
   console.log('[signin] attempt', email, 'password length', password.length)
 
+  // Build base URL from forwarded headers (Cloudflare → Nginx → Next.js)
+  const proto = request.headers.get('x-forwarded-proto') || 'https'
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'tone-crm.ru'
+  const baseUrl = `${proto}://${host}`
+
   if (!email || !password) {
     return NextResponse.redirect(
-      new URL('/login?error=' + encodeURIComponent('Email и пароль обязательны'), request.url)
+      new URL('/login?error=' + encodeURIComponent('Email и пароль обязательны'), baseUrl)
     )
   }
 
@@ -43,10 +48,10 @@ export async function POST(request: Request) {
   if (error || !data.user || !data.session) {
     console.error('[signin] error', error?.message || 'no session')
     return NextResponse.redirect(
-      new URL('/login?error=' + encodeURIComponent(error?.message || 'Ошибка входа'), request.url)
+      new URL('/login?error=' + encodeURIComponent(error?.message || 'Ошибка входа'), baseUrl)
     )
   }
 
   console.log('[signin] success', data.user.id)
-  return NextResponse.redirect(new URL('/', request.url))
+  return NextResponse.redirect(new URL('/', baseUrl))
 }
