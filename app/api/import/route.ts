@@ -10,7 +10,7 @@ const STATUS_MARK = 'Забрано'
 const MANAGER_SHEETS: { name: string; sheetId: string }[] = [
   { name: 'Зорькина', sheetId: '1339y_T9_mnfyiXHEwpCUa8rhf-OCCIYMgF_eICsxVno' },
   { name: 'Духина', sheetId: '1MmhqEy5NoYn8ed7fxeP-Od_OOy66xyZtzLHVGwAQSxA' },
-  { name: 'Тян', sheetId: '1m2QLv5IaE9o2d-38-MYgwyzBsGx8TdN7eA13ArCoogs' },
+  { name: 'Кира', sheetId: '1m2QLv5IaE9o2d-38-MYgwyzBsGx8TdN7eA13ArCoogs' },
   { name: 'Карымова', sheetId: '1MUMnGPnWf6aIOnhPF6xRZkj-t9oi90i_ZwoU49O9xbY' },
   { name: 'Жеребцова', sheetId: '1oObzPpps3l8-8eIfJDnDURO63J421840utPR4yV06nk' },
   { name: 'Тарасюк', sheetId: '1Y904RUIhMtlCFdWQtJMkcAJwzfD4NwO_FIlxk3udflo' },
