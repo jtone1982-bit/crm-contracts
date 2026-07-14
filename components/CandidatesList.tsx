@@ -16,6 +16,7 @@ interface Candidate {
   telegram_username?: string | null
   whatsapp_number?: string | null
   max_contact?: string | null
+  manager?: { full_name: string | null }[] | null
 }
 
 interface CandidatesListProps {
@@ -56,6 +57,7 @@ export default function CandidatesList({ candidates, statusFilter }: CandidatesL
               <th className="p-3">ФИО</th>
               <th className="p-3">Откуда</th>
               <th className="p-3">Куда</th>
+              <th className="p-3">Менеджер</th>
               <th className="p-3">Следующий контакт</th>
             </tr>
           </thead>
@@ -89,6 +91,7 @@ export default function CandidatesList({ candidates, statusFilter }: CandidatesL
                 <td className="p-3">{c.full_name || '—'}</td>
                 <td className="p-3">{c.city_from || '—'}</td>
                 <td className="p-3">{c.city_to || '—'}</td>
+                <td className="p-3 text-sm">{c.manager?.[0]?.full_name || '—'}</td>
                 <td className="p-3">{c.next_contact_date || '—'}</td>
               </tr>
             ))}
@@ -137,6 +140,9 @@ export default function CandidatesList({ candidates, statusFilter }: CandidatesL
             <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
               <span>{c.city_from || '—'} → {c.city_to || '—'}</span>
             </div>
+            {c.manager?.[0]?.full_name && (
+              <div className="mt-1 text-xs text-gray-500">Менеджер: {c.manager[0].full_name}</div>
+            )}
           </div>
         ))}
       </div>

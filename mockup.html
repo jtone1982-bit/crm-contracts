@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Контракты — Redesign v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Warm earth palette — no blue, no VK */
+  --bg: #f5f1ea;
+  --surface: #fefdfb;
+  --surface-2: #f0ebe3;
+  --sidebar-bg: #faf7f2;
+  --border: rgba(60,50,40,0.08);
+  --border-strong: rgba(60,50,40,0.14);
+
+  --text: #2d2520;
+  --text-secondary: #6b5d50;
+  --text-muted: #a89a8c;
+
+  /* Terracotta accent */
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --accent-light: #fef3ed;
+
+  /* Sage green secondary */
+  --sage: #4a7c59;
+  --sage-light: #edf5ef;
+
+  --gold: #b45309;
+  --gold-light: #fefbeb;
+  --plum: #7c5d8c;
+  --plum-light: #f5f0f7;
+  --red: #b91c1c;
+  --red-light: #fef2f2;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(60,50,40,0.04);
+  --shadow-md: 0 4px 20px rgba(60,50,40,0.06), 0 1px 5px rgba(60,50,40,0.03);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* ===== SOFT SIDEBAR ===== */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: 232px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  z-index: 100;
+}
+
+.sidebar-header { padding: 20px 16px 16px; }
+
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.sidebar-logo .logo-icon {
+  width: 30px; height: 30px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 15px; font-weight: 800;
+  box-shadow: 0 2px 8px rgba(194,65,12,0.2);
+}
+
+.sidebar-nav { padding: 8px; flex: 1; overflow-y: auto; }
+
+.nav-section {
+  padding: 14px 10px 5px;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 11px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13.5px; font-weight: 600;
+  transition: all 0.12s;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+
+.nav-item:hover { background: var(--surface-2); color: var(--text); }
+.nav-item.active { background: var(--accent-light); color: var(--accent); }
+
+.nav-item .icon { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.6; }
+.nav-item.active .icon { opacity: 1; }
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: white;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px;
+}
+
+.sidebar-footer { padding: 10px 8px; border-top: 1px solid var(--border); }
+
+.user-mini {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 9px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background 0.12s;
+}
+.user-mini:hover { background: var(--surface-2); }
+
+.user-dot {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4c9bc, #b5a89a);
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: #5a4d40; font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-mini-info { flex: 1; min-width: 0; }
+.user-mini-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-mini-role { font-size: 11px; color: var(--text-muted); }
+
+.logout-mini { color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 4px; border-radius: 4px; }
+.logout-mini:hover { color: var(--red); }
+
+/* ===== MAIN ===== */
+.main { margin-left: 232px; min-height: 100vh; }
+
+.topbar {
+  background: rgba(254,253,251,0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+
+.breadcrumb { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.breadcrumb b { color: var(--text); font-weight: 700; }
+
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+
+.topbar-btn {
+  padding: 7px 13px; font-size: 12.5px; font-weight: 600;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text-secondary);
+  cursor: pointer; transition: all 0.12s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.topbar-btn:hover { background: var(--surface-2); border-color: var(--border-strong); color: var(--text); }
+
+.content { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+.page-header { margin-bottom: 20px; }
+.page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.6px; }
+.page-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+
+/* ===== PILLS ===== */
+.status-pills { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 18px; }
+
+.pill {
+  padding: 6px 15px; font-size: 12.5px; font-weight: 600;
+  border-radius: 20px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-secondary);
+  cursor: pointer; transition: all 0.12s;
+}
+.pill:hover { background: var(--surface-2); }
+.pill.active { background: var(--text); border-color: var(--text); color: #fefdfb; }
+
+/* ===== TABLE ===== */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--surface-2); }
+
+th {
+  text-align: left; padding: 11px 16px;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover { background: var(--surface-2); }
+
+.phone-cell { display: flex; align-items: center; gap: 7px; }
+.phone-link { color: var(--text); font-weight: 600; cursor: pointer; text-decoration: none; }
+.phone-link:hover { color: var(--accent); }
+
+.phone-btn {
+  width: 28px; height: 28px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; transition: all 0.12s;
+}
+.phone-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+
+.muted { color: var(--text-muted); }
+
+.badge { display: inline-block; padding: 3px 11px; font-size: 11px; font-weight: 700; border-radius: 12px; }
+.badge-obzvon { background: var(--accent-light); color: var(--accent); }
+.badge-nedozvon { background: var(--gold-light); color: var(--gold); }
+.badge-rabote { background: var(--plum-light); color: var(--plum); }
+.badge-bilet { background: var(--gold-light); color: var(--gold); }
+.badge-podpisal { background: var(--sage-light); color: var(--sage); }
+.badge-neaktualno { background: var(--surface-2); color: var(--text-muted); }
+
+/* ===== LOGIN ===== */
+.login-page {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(155deg, #f5f1ea 0%, #e8ddd0 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 8px 40px rgba(60,50,40,0.08), 0 2px 8px rgba(60,50,40,0.04);
+  padding: 40px;
+  width: 100%; max-width: 380px;
+}
+
+.login-logo {
+  width: 48px; height: 48px;
+  background: var(--accent);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 22px; font-weight: 800;
+  margin: 0 auto 20px;
+  box-shadow: 0 4px 16px rgba(194,65,12,0.25);
+}
+
+.login-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.6px; }
+.login-subtitle { text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 28px; font-weight: 500; }
+
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+.field input {
+  width: 100%; padding: 11px 15px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text); background: var(--surface);
+  outline: none; transition: all 0.12s;
+}
+.field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(194,65,12,0.1); }
+.field input::placeholder { color: var(--text-muted); }
+
+.btn-primary {
+  width: 100%; padding: 12px;
+  background: var(--accent); color: white;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background 0.12s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  box-shadow: 0 2px 8px rgba(194,65,12,0.2);
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-link {
+  width: 100%; text-align: center;
+  background: none; border: none;
+  color: var(--text-muted); font-size: 13px;
+  font-weight: 600; cursor: pointer; margin-top: 14px; padding: 4px;
+}
+.btn-link:hover { color: var(--text); text-decoration: underline; }
+
+.login-error {
+  background: var(--red-light); color: var(--red);
+  padding: 11px 15px; border-radius: var(--radius-sm);
+  font-size: 13px; margin-bottom: 16px; font-weight: 500;
+}
+
+/* ===== MESSAGES ===== */
+.msg-list { max-width: 560px; }
+
+.msg-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 15px 17px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 8px; cursor: pointer;
+  transition: all 0.12s;
+  text-decoration: none; color: var(--text);
+  box-shadow: var(--shadow);
+}
+.msg-item:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+
+.msg-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+
+.msg-body { flex: 1; min-width: 0; }
+.msg-name { font-size: 14px; font-weight: 700; }
+.msg-preview { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+.msg-time { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+.msg-badge {
+  background: var(--accent); color: white;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 10px;
+}
+
+.section-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.6px;
+  margin: 20px 0 8px;
+}
+
+/* ===== CALENDAR ===== */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
+
+.cal-day {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px; min-height: 100px;
+  box-shadow: var(--shadow);
+}
+.cal-day.today { border-color: var(--accent); border-width: 2px; }
+.cal-day-label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+.cal-event { font-size: 11px; padding: 4px 8px; border-radius: 5px; margin-bottom: 3px; cursor: pointer; font-weight: 600; }
+.cal-event.bilet { background: var(--gold-light); color: var(--gold); }
+.cal-event.oformlenie { background: #ffedd5; color: #9a3412; }
+.cal-event.podpisal { background: var(--sage-light); color: var(--sage); }
+
+.cal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.cal-nav-btn {
+  width: 34px; height: 34px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: var(--text-secondary);
+}
+.cal-nav-btn:hover { background: var(--surface-2); }
+.cal-month { font-size: 16px; font-weight: 700; min-width: 170px; text-align: center; }
+.cal-today-btn {
+  padding: 7px 15px; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: var(--surface);
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.cal-today-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ===== SECTIONS ===== */
+.mockup-section { border-top: 3px solid var(--border); padding-top: 40px; margin-top: 40px; }
+.mockup-label { font-size: 16px; font-weight: 800; color: var(--text-muted); margin-bottom: 18px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ===== 1: LOGIN ===== -->
+<div class="mockup-label">🔐 ВХОД</div>
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">К</div>
+    <div class="login-title">CRM Контракты</div>
+    <div class="login-subtitle">Войдите в свой аккаунт</div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" placeholder="name@example.com">
+    </div>
+    <div class="field">
+      <label>Пароль</label>
+      <input type="password" placeholder="••••••••">
+    </div>
+    <button class="btn-primary">Войти</button>
+    <button class="btn-link">Нет аккаунта? Зарегистрироваться</button>
+  </div>
+</div>
+
+<!-- ===== 2: CANDIDATES ===== -->
+<div class="mockup-section">
+<div class="mockup-label">📋 КАНДИДАТЫ</div>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo"><div class="logo-icon">К</div>CRM Контракты</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Работа</div>
+    <a class="nav-item active">
+      <svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h12M3 9h12M3 14h7"/></svg>
+      Кандидаты
+    </a>
+    <a class="nav-item">
+      <svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="12" height="11" rx="1.5"/><path d="M6 2.5v3M12 2.5v3M3 7.5h12"/></svg>
+      Календарь
+    </a>
+    <a class="nav-item">
+      <svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 5.5l7 4.5 7-4.5M2 5.5v8h14v-8M2 5.5L9 2l7 3.5"/></svg>
+      Сообщения
+      <span class="nav-badge">3</span>
+    </a>
+    <div class="nav-section">Аккаунт</div>
+    <a class="nav-item">
+      <svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3"/><path d="M3.5 15.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>
+      Профиль
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-mini">
+      <div class="user-dot">ТМ</div>
+      <div class="user-mini-info">
+        <div class="user-mini-name">Тестовый Менеджер</div>
+        <div class="user-mini-role">Менеджер</div>
+      </div>
+      <span class="logout-mini" title="Выйти">⏻</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb"><b>Кандидаты</b></div>
+    <div class="topbar-right">
+      <button class="topbar-btn">🔍 Поиск</button>
+      <button class="topbar-btn">+ Добавить</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="page-header">
+      <div class="page-title">Все кандидаты</div>
+      <div class="page-subtitle">248 всего · 15 на обзвоне</div>
+    </div>
+
+    <div class="status-pills">
+      <a class="pill active">Все</a>
+      <a class="pill">На обзвон</a>
+      <a class="pill">Недозвон</a>
+      <a class="pill">В работе</a>
+      <a class="pill">На билетах</a>
+      <a class="pill">На оформлении</a>
+      <a class="pill">Подписал</a>
+      <a class="pill">Неактуально</a>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Телефон</th>
+            <th>ФИО</th>
+            <th>Маршрут</th>
+            <th>Статус</th>
+            <th>След. контакт</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="phone-cell"><a class="phone-link">+7 999 888-77-66</a><button class="phone-btn">📞</button></div></td>
+            <td>Иванов Иван Иванович</td>
+            <td class="muted">Москва → Владивосток</td>
+            <td><span class="badge badge-obzvon">На обзвон</span></td>
+            <td class="muted">15.07.2026</td>
+          </tr>
+          <tr>
+            <td><div class="phone-cell"><a class="phone-link">+7 921 555-44-33</a><button class="phone-btn">📞</button></div></td>
+            <td>Петров Пётр</td>
+            <td class="muted">Казань → СПб</td>
+            <td><span class="badge badge-rabote">В работе</span></td>
+            <td class="muted">18.07.2026</td>
+          </tr>
+          <tr>
+            <td><div class="phone-cell"><a class="phone-link">+7 905 333-22-11</a><button class="phone-btn">📞</button></div></td>
+            <td>Сидорова Анна</td>
+            <td class="muted">Новосибирск → Москва</td>
+            <td><span class="badge badge-podpisal">Подписал</span></td>
+            <td class="muted">—</td>
+          </tr>
+          <tr>
+            <td><div class="phone-cell"><a class="phone-link">+7 911 777-66-55</a><button class="phone-btn">📞</button></div></td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td><span class="badge badge-nedozvon">Недозвон</span></td>
+            <td class="muted">16.07.2026</td>
+          </tr>
+          <tr>
+            <td><div class="phone-cell"><a class="phone-link">+7 922 444-33-22</a><button class="phone-btn">📞</button></div></td>
+            <td>Кузнецов Дмитрий</td>
+            <td class="muted">Екатеринбург → Сочи</td>
+            <td><span class="badge badge-bilet">На билетах</span></td>
+            <td class="muted">20.07.2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== 3: MESSAGES ===== -->
+<div class="mockup-section">
+<div class="mockup-label">💬 СООБЩЕНИЯ</div>
+
+<div class="sidebar">
+  <div class="sidebar-header"><div class="sidebar-logo"><div class="logo-icon">К</div>CRM Контракты</div></div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Работа</div>
+    <a class="nav-item"><svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h12M3 9h12M3 14h7"/></svg>Кандидаты</a>
+    <a class="nav-item"><svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="12" height="11" rx="1.5"/><path d="M6 2.5v3M12 2.5v3M3 7.5h12"/></svg>Календарь</a>
+    <a class="nav-item active"><svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 5.5l7 4.5 7-4.5M2 5.5v8h14v-8M2 5.5L9 2l7 3.5"/></svg>Сообщения<span class="nav-badge">3</span></a>
+    <div class="nav-section">Аккаунт</div>
+    <a class="nav-item"><svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3"/><path d="M3.5 15.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>Профиль</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-mini"><div class="user-dot">ТМ</div><div class="user-mini-info"><div class="user-mini-name">Тестовый Менеджер</div><div class="user-mini-role">Менеджер</div></div><span class="logout-mini">⏻</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar"><div class="breadcrumb"><b>Сообщения</b></div></div>
+  <div class="content">
+    <div class="page-header">
+      <div class="page-title">Сообщения</div>
+      <div class="page-subtitle">3 непрочитанных</div>
+    </div>
+
+    <div class="msg-list">
+      <a class="msg-item">
+        <div class="msg-icon">📢</div>
+        <div class="msg-body"><div class="msg-name">Новости компании</div><div class="msg-preview">Только администраторы</div></div>
+        <span class="badge badge-obzvon">Канал</span>
+      </a>
+      <a class="msg-item">
+        <div class="msg-icon">💬</div>
+        <div class="msg-body"><div class="msg-name">Общий чат</div><div class="msg-preview">Все пользователи</div></div>
+        <span class="msg-badge">2</span>
+      </a>
+
+      <div class="section-label">Личные сообщения</div>
+
+      <a class="msg-item">
+        <div class="msg-icon" style="background:#edf5ef;border-color:#a7d4b8">КИ</div>
+        <div class="msg-body"><div class="msg-name">Карымова Илона</div><div class="msg-preview">Привет, есть вопрос по кандидату</div></div>
+        <div style="text-align:right"><div class="msg-time">14:32</div><span class="msg-badge" style="margin-top:3px;display:inline-block">1</span></div>
+      </a>
+      <a class="msg-item">
+        <div class="msg-icon" style="background:#f5f0f7;border-color:#d4c5dc">ТД</div>
+        <div class="msg-body"><div class="msg-name">Тарасюк Дарья</div><div class="msg-preview">Вы: Спасибо, посмотрю</div></div>
+        <div class="msg-time">12:15</div>
+      </a>
+      <a class="msg-item">
+        <div class="msg-icon" style="background:#fefbeb;border-color:#fde68a">Л</div>
+        <div class="msg-body"><div class="msg-name">Лаевская</div><div class="msg-preview">Был на сайте: 5 мин назад</div></div>
+        <div class="msg-time">вчера</div>
+      </a>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== 4: CALENDAR ===== -->
+<div class="mockup-section">
+<div class="mockup-label">📅 КАЛЕНДАРЬ</div>
+
+<div class="sidebar">
+  <div class="sidebar-header"><div class="sidebar-logo"><div class="logo-icon">К</div>CRM Контракты</div></div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Работа</div>
+    <a class="nav-item"><svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h12M3 9h12M3 14h7"/></svg>Кандидаты</a>
+    <a class="nav-item active"><svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="12" height="11" rx="1.5"/><path d="M6 2.5v3M12 2.5v3M3 7.5h12"/></svg>Календарь</a>
+    <a class="nav-item"><svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 5.5l7 4.5 7-4.5M2 5.5v8h14v-8M2 5.5L9 2l7 3.5"/></svg>Сообщения<span class="nav-badge">3</span></a>
+    <div class="nav-section">Аккаунт</div>
+    <a class="nav-item"><svg class="icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6" r="3"/><path d="M3.5 15.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>Профиль</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-mini"><div class="user-dot">ТМ</div><div class="user-mini-info"><div class="user-mini-name">Тестовый Менеджер</div><div class="user-mini-role">Менеджер</div></div><span class="logout-mini">⏻</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb"><b>Календарь</b></div>
+    <div class="topbar-right">
+      <button class="topbar-btn">Неделя</button>
+      <button class="topbar-btn">Месяц</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="cal-header">
+      <button class="cal-nav-btn">←</button>
+      <div class="cal-month">Июль 2026</div>
+      <button class="cal-nav-btn">→</button>
+      <button class="cal-today-btn">Сегодня</button>
+    </div>
+
+    <div class="cal-grid">
+      <div class="cal-day"><div class="cal-day-label">Пн 13</div></div>
+      <div class="cal-day"><div class="cal-day-label">Вт 14</div><div class="cal-event oformlenie">Иванов — оформление</div></div>
+      <div class="cal-day today"><div class="cal-day-label">Ср 15</div><div class="cal-event bilet">Петров — билеты</div></div>
+      <div class="cal-day"><div class="cal-day-label">Чт 16</div><div class="cal-event bilet">Сидорова — билеты</div></div>
+      <div class="cal-day"><div class="cal-day-label">Пт 17</div></div>
+      <div class="cal-day"><div class="cal-day-label">Сб 18</div></div>
+      <div class="cal-day"><div class="cal-day-label">Вс 19</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>
