@@ -16,7 +16,6 @@ const MANAGER_SHEETS: { name: string; sheetId: string }[] = [
   { name: 'Тарасюк', sheetId: '1Y904RUIhMtlCFdWQtJMkcAJwzfD4NwO_FIlxk3udflo' },
   { name: 'Лаевская', sheetId: '1VxD0fLNKt_TAmjutm1ClhLNzWsv9UuHf46IZJ7mgomc' },
   { name: 'Абрегова', sheetId: '1YcJGN6Bp_ksb10Ro04HOabexbix5Ghf8NeiR3a8hTtQ' },
-  { name: 'Пешкова', sheetId: '1zSlpwmDcji_1CMa7ReAzqcPEtdPRWxVuxxqowmjkHek' },
 ]
 
 function normalizePhone(raw: any): string {
