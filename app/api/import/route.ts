@@ -110,6 +110,7 @@ export async function GET() {
     manager_id: string
     status: string
     imported_from_sheets: boolean
+    lead_source: string | null
   }[] = []
 
   const allSheetUpdates: { sheetId: string; range: string; value: string }[] = []
@@ -127,7 +128,11 @@ export async function GET() {
       if (headerRow.length === 0) continue
 
       let phoneIdx = headerRow.indexOf('Телефон')
+      if (phoneIdx === -1) phoneIdx = headerRow.indexOf('Номер телефона')
       if (phoneIdx === -1) phoneIdx = 1
+
+      let markerIdx = headerRow.indexOf('Маркер')
+      if (markerIdx === -1) markerIdx = headerRow.indexOf('Имя лида')
 
       let crmStatusIdx = headerRow.indexOf(CRM_STATUS_HEADER)
 
@@ -156,6 +161,7 @@ export async function GET() {
         const rawPhone = row[phoneIdx]?.toString().trim()
         const phone = normalizePhone(rawPhone)
         const crmStatus = crmStatusIdx >= 0 ? row[crmStatusIdx]?.toString().trim() : ''
+        const leadSource = markerIdx >= 0 ? row[markerIdx]?.toString().trim() : ''
 
         if (!phone || crmStatus === STATUS_MARK || existingPhones.has(phone)) continue
 
@@ -164,6 +170,7 @@ export async function GET() {
           manager_id: mgr.crmId,
           status: 'На обзвон',
           imported_from_sheets: true,
+          lead_source: leadSource || null,
         })
 
         allSheetUpdates.push({
