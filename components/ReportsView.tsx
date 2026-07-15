@@ -59,11 +59,23 @@ export default function ReportsView({ statuses, leadSources, managers }: Reports
   const generateReport = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/reports?${buildParams()}`)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+      const res = await fetch(`/api/reports?${buildParams()}`, { signal: controller.signal })
+      clearTimeout(timeoutId)
+      if (!res.ok) {
+        console.error('Report API error:', res.status)
+        return
+      }
       const data = await res.json()
       setReport(data)
-    } catch (err) {
-      console.error('Report error:', err)
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        console.error('Report timeout (30s)')
+        alert('Отчёт грузится слишком долго. Проверьте интернет и попробуйте снова.')
+      } else {
+        console.error('Report error:', err)
+      }
     } finally {
       setLoading(false)
     }
@@ -174,7 +186,7 @@ export default function ReportsView({ statuses, leadSources, managers }: Reports
             disabled={loading}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 disabled:opacity-50"
           >
-            {loading ? 'Загрузка...' : 'Сформировать отчёт'}
+            {loading ? 'Загрузка... (может занять до 30 сек)' : 'Сформировать отчёт'}
           </button>
           {report && (
             <button
