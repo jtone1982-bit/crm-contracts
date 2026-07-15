@@ -7,35 +7,39 @@ interface ReportsViewProps {
   statuses: string[]
   leadSources: string[]
   managers: { id: string; name: string }[]
-}
-
-interface ReportRow {
-  status: string
-  count: number
-  percentage: number
-}
-
-interface SourceRow {
-  lead_source: string
-  count: number
-  percentage: number
+  initialReport?: any
+  initialStatuses?: string[]
+  initialSources?: string[]
+  initialManager?: string
+  initialDateFrom?: string
+  initialDateTo?: string
 }
 
 interface ReportData {
   total: number
-  byStatus: ReportRow[]
-  bySource: SourceRow[]
+  byStatus: { status: string; count: number; percentage: number }[]
+  bySource: { lead_source: string; count: number; percentage: number }[]
   byManager: { manager_name: string; count: number; percentage: number }[]
   byStatusAndSource: { status: string; lead_source: string; count: number }[]
 }
 
-export default function ReportsView({ statuses, leadSources, managers }: ReportsViewProps) {
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
-  const [selectedSources, setSelectedSources] = useState<string[]>([])
-  const [selectedManager, setSelectedManager] = useState<string>('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [report, setReport] = useState<ReportData | null>(null)
+export default function ReportsView({
+  statuses,
+  leadSources,
+  managers,
+  initialReport,
+  initialStatuses = [],
+  initialSources = [],
+  initialManager = '',
+  initialDateFrom = '',
+  initialDateTo = '',
+}: ReportsViewProps) {
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialStatuses)
+  const [selectedSources, setSelectedSources] = useState<string[]>(initialSources)
+  const [selectedManager, setSelectedManager] = useState<string>(initialManager)
+  const [dateFrom, setDateFrom] = useState(initialDateFrom)
+  const [dateTo, setDateTo] = useState(initialDateTo)
+  const [report, setReport] = useState<ReportData | null>(initialReport || null)
   const [loading, setLoading] = useState(false)
 
   const toggleStatus = (s: string) => {
@@ -46,7 +50,19 @@ export default function ReportsView({ statuses, leadSources, managers }: Reports
     setSelectedSources((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
   }
 
-  const buildParams = useCallback(() => {
+  // Build URL for server-side navigation (no client fetch needed)
+  const buildUrl = useCallback(() => {
+    const params = new URLSearchParams()
+    if (selectedStatuses.length > 0) params.set('statuses', selectedStatuses.join(','))
+    if (selectedSources.length > 0) params.set('sources', selectedSources.join(','))
+    if (selectedManager) params.set('manager_id', selectedManager)
+    if (dateFrom) params.set('date_from', dateFrom)
+    if (dateTo) params.set('date_to', dateTo)
+    const qs = params.toString()
+    return qs ? `/reports?${qs}` : '/reports'
+  }, [selectedStatuses, selectedSources, selectedManager, dateFrom, dateTo])
+
+  const exportParams = useCallback(() => {
     const params = new URLSearchParams()
     if (selectedStatuses.length > 0) params.set('statuses', selectedStatuses.join(','))
     if (selectedSources.length > 0) params.set('sources', selectedSources.join(','))
@@ -55,36 +71,6 @@ export default function ReportsView({ statuses, leadSources, managers }: Reports
     if (dateTo) params.set('date_to', dateTo)
     return params.toString()
   }, [selectedStatuses, selectedSources, selectedManager, dateFrom, dateTo])
-
-  const generateReport = async () => {
-    setLoading(true)
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000)
-      const res = await fetch(`/api/reports?${buildParams()}`, { signal: controller.signal })
-      clearTimeout(timeoutId)
-      if (!res.ok) {
-        console.error('Report API error:', res.status)
-        return
-      }
-      const data = await res.json()
-      setReport(data)
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        console.error('Report timeout (30s)')
-        alert('Отчёт грузится слишком долго. Проверьте интернет и попробуйте снова.')
-      } else {
-        console.error('Report error:', err)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const exportExcel = () => {
-    const params = buildParams()
-    window.location.href = `/api/reports/export?${params}`
-  }
 
   const selectAllStatuses = () => setSelectedStatuses(statuses.slice())
   const clearStatuses = () => setSelectedStatuses([])
@@ -181,20 +167,20 @@ export default function ReportsView({ statuses, leadSources, managers }: Reports
         </div>
 
         <div className="flex gap-3">
-          <button
-            onClick={generateReport}
-            disabled={loading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 disabled:opacity-50"
+          <Link
+            href={buildUrl()}
+            prefetch={false}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 inline-block"
           >
-            {loading ? 'Загрузка... (может занять до 30 сек)' : 'Сформировать отчёт'}
-          </button>
+            Сформировать отчёт
+          </Link>
           {report && (
-            <button
-              onClick={exportExcel}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-500"
+            <a
+              href={`/api/reports/export?${exportParams()}`}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-500 inline-block"
             >
               Скачать Excel
-            </button>
+            </a>
           )}
         </div>
       </div>
@@ -228,10 +214,7 @@ export default function ReportsView({ statuses, leadSources, managers }: Reports
                     <td className="p-3 text-right">{row.percentage.toFixed(1)}%</td>
                     <td className="p-3">
                       <div className="w-full bg-gray-200 rounded-full h-4">
-                        <div
-                          className="bg-blue-600 h-4 rounded-full"
-                          style={{ width: `${Math.min(row.percentage, 100)}%` }}
-                        />
+                        <div className="bg-blue-600 h-4 rounded-full" style={{ width: `${Math.min(row.percentage, 100)}%` }} />
                       </div>
                     </td>
                   </tr>
@@ -261,10 +244,7 @@ export default function ReportsView({ statuses, leadSources, managers }: Reports
                       <td className="p-3 text-right">{row.percentage.toFixed(1)}%</td>
                       <td className="p-3">
                         <div className="w-full bg-gray-200 rounded-full h-4">
-                          <div
-                            className="bg-green-600 h-4 rounded-full"
-                            style={{ width: `${Math.min(row.percentage, 100)}%` }}
-                          />
+                          <div className="bg-green-600 h-4 rounded-full" style={{ width: `${Math.min(row.percentage, 100)}%` }} />
                         </div>
                       </td>
                     </tr>
