@@ -29,13 +29,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Link>
         </div>
         <div className="flex items-center gap-4 text-sm">
-          <Link href="/messages" className="text-gray-700 hover:text-blue-600 flex items-center">
+          <Link href="/messages" prefetch={false} className="text-gray-700 hover:text-blue-600 flex items-center">
             Сообщения
           </Link>
-          <Link href="/calendar" className="text-gray-700 hover:text-blue-600">
+          <Link href="/calendar" prefetch={false} className="text-gray-700 hover:text-blue-600">
             Календарь
           </Link>
-          <Link href="/profile" className="text-gray-700 hover:text-blue-600">
+          <Link href="/profile" prefetch={false} className="text-gray-700 hover:text-blue-600">
             Профиль
           </Link>
           <span className="text-gray-600 truncate max-w-[150px]">{profile.email}</span>

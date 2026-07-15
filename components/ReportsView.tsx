@@ -95,7 +95,7 @@ export default function ReportsView({ statuses, leadSources, managers }: Reports
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Отчёт</h1>
-        <Link href="/" className="text-blue-600 hover:underline text-sm">← Назад</Link>
+        <Link href="/" prefetch={false} className="text-blue-600 hover:underline text-sm">← Назад</Link>
       </div>
 
       {/* Filters */}
