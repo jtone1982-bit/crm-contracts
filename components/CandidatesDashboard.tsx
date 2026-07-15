@@ -69,6 +69,9 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
               <a href="/api/export" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-500">
                 Экспорт Excel
               </a>
+              <Link href="/reports" className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-500">
+                Отчёт
+              </Link>
               <form action="/api/import" method="get">
                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500">
                   Импорт из Sheets
