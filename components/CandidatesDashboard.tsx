@@ -31,8 +31,14 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
     if (search) params.append('q', search)
 
     fetch(`/api/candidates?${params.toString()}`)
-      .then((r) => r.json())
-      .then((data) => setCandidates(data || []))
+      .then((r) => {
+        if (r.status === 401) {
+          window.location.href = '/login'
+          return []
+        }
+        return r.json()
+      })
+      .then((data) => setCandidates(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false))
   }, [departmentId, managerId, search])
 
