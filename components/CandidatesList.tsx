@@ -42,17 +42,18 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
       <CandidateModal candidateId={selectedId} onClose={() => setSelectedId(null)} statuses={PIPELINE_STATUSES.slice()} />
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{statusFilter ? statusFilter : 'Все кандидаты'}</h1>
-        <a href="/" className="text-blue-600 hover:underline">← Назад</a>
+        <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#2d2520' }}>{statusFilter ? statusFilter : 'Все кандидаты'}</h1>
+        <a href="/" className="hover:underline" style={{ color: '#c2410c' }}>← Назад</a>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Link href="/candidates" className="px-3 py-1 text-sm border rounded-full hover:bg-gray-50">Все</Link>
+        <Link href="/candidates" className="px-3 py-1 text-sm border rounded-full hover:shadow-sm transition no-underline" style={{ borderColor: 'rgba(60,50,40,0.12)', color: '#6b5d50', background: '#fefdfb' }}>Все</Link>
         {PIPELINE_STATUSES.map((status) => (
           <Link
             key={status}
             href={`/candidates?status=${encodeURIComponent(status)}`}
-            className={`px-3 py-1 text-sm border rounded-full hover:bg-gray-50 ${statusFilter === status ? 'bg-blue-100 border-blue-300' : ''}`}
+            className="px-3 py-1 text-sm border rounded-full hover:shadow-sm transition no-underline"
+            style={statusFilter === status ? { background: '#c2410c', color: 'white', borderColor: '#c2410c' } : { borderColor: 'rgba(60,50,40,0.12)', color: '#6b5d50', background: '#fefdfb' }}
           >
             {status}
           </Link>
@@ -86,9 +87,9 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
         </div>
       )}
 
-      <div className="bg-white border rounded-lg overflow-x-auto hidden md:block">
+      <div className="bg-[#fefdfb] border rounded-xl overflow-x-auto hidden md:block" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
         <table className="w-full min-w-[600px]">
-          <thead className="bg-gray-100 text-left text-sm">
+          <thead className="text-left text-sm" style={{ background: 'rgba(240,235,227,0.6)' }}>
             <tr>
               <th className="p-3">Телефон</th>
               <th className="p-3">ФИО</th>
@@ -106,7 +107,8 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setSelectedId(c.id)}
-                      className="text-blue-600 hover:underline text-left"
+                      className="hover:underline text-left font-semibold"
+                      style={{ color: '#2d2520' }}
                     >
                       {c.phone}
                     </button>
@@ -118,7 +120,8 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
                     >
                       <button
                         type="button"
-                        className="text-gray-500 hover:text-blue-600 p-1 rounded hover:bg-gray-100"
+                        className="p-1 rounded transition hover:shadow-sm"
+                        style={{ color: '#a89a8c' }}
                         aria-label="Действия с номером"
                       >
                         📞
@@ -143,14 +146,16 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
           <div
             key={c.id}
             onClick={() => setSelectedId(c.id)}
-            className="block w-full text-left bg-white border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+            className="block w-full text-left bg-[#fefdfb] border rounded-xl p-4 hover:shadow-md transition cursor-pointer no-underline"
+            style={{ borderColor: 'rgba(60,50,40,0.08)' }}
             role="button"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="text-blue-600 font-medium"
+                  className="font-semibold"
+                  style={{ color: '#2d2520' }}
                   onClick={(e) => {
                     e.stopPropagation()
                     setSelectedId(c.id)
@@ -166,31 +171,29 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
                 >
                   <button
                     type="button"
-                    className="text-gray-500 hover:text-blue-600 p-1 rounded hover:bg-gray-100"
+                    className="p-1 rounded transition hover:shadow-sm"
+                    style={{ color: '#a89a8c' }}
                     aria-label="Действия с номером"
                   >
                     📞
                   </button>
                 </PhoneActionsMenu>
               </div>
-              <span className="text-xs text-gray-500">{c.next_contact_date || '—'}</span>
+              <span className="text-xs" style={{ color: '#a89a8c' }}>{c.next_contact_date || '—'}</span>
             </div>
-            <div className="mt-2 text-sm text-gray-900">{c.full_name || '—'}</div>
-            <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
+            <div className="mt-2 text-sm" style={{ color: '#2d2520' }}>{c.full_name || '—'}</div>
+            <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: '#6b5d50' }}>
               <span>{c.city_from || '—'} → {c.city_to || '—'}</span>
-              {isAdmin && c.lead_source && (
-                <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-700">{c.lead_source}</span>
-              )}
             </div>
             {getManagerName(c) !== '—' && (
-              <div className="mt-1 text-xs text-gray-500">Менеджер: {getManagerName(c)}</div>
+              <div className="mt-1 text-xs" style={{ color: '#a89a8c' }}>Менеджер: {getManagerName(c)}</div>
             )}
           </div>
         ))}
       </div>
 
       {(!candidates || candidates.length === 0) && (
-        <div className="p-8 text-center text-gray-500">Нет кандидатов</div>
+        <div className="p-8 text-center" style={{ color: '#a89a8c' }}>Нет кандидатов</div>
       )}
     </div>
   )

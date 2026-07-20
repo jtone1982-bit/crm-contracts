@@ -137,9 +137,9 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
 
       {!loading && (
         <>
-          <div className="bg-white border rounded-lg overflow-x-auto hidden md:block">
+          <div className="bg-[#fefdfb] border rounded-xl overflow-x-auto hidden md:block" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
             <table className="w-full min-w-[600px]">
-              <thead className="bg-gray-100 text-left text-sm">
+              <thead className="text-left text-sm" style={{ background: 'rgba(240,235,227,0.6)' }}>
                 <tr>
                   <th className="p-3">Телефон</th>
                   <th className="p-3">ФИО</th>
@@ -192,7 +192,8 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
               <div
                 key={c.id}
                 onClick={() => setSelectedId(c.id)}
-                className="block w-full text-left bg-white border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                className="block w-full text-left bg-[#fefdfb] border rounded-xl p-4 hover:shadow-md transition cursor-pointer no-underline"
+                style={{ borderColor: 'rgba(60,50,40,0.08)' }}
                 role="button"
               >
                 <div className="flex items-center justify-between">

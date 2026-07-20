@@ -107,22 +107,25 @@ export default function CalendarPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setCurrentDate((d) => (view === 'week' ? addDays(d, -7) : new Date(d.getFullYear(), d.getMonth() - 1, 1)))}
-            className="px-3 py-2 border rounded-lg hover:bg-gray-50"
+            className="px-3 py-2 border rounded-lg hover:shadow-sm transition"
+            style={{ borderColor: 'rgba(60,50,40,0.08)', background: '#fefdfb', color: '#6b5d50' }}
           >
             ←
           </button>
-          <h1 className="text-xl font-bold">
+          <h1 className="text-xl font-bold" style={{ color: '#2d2520' }}>
             {currentDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
           </h1>
           <button
             onClick={() => setCurrentDate((d) => (view === 'week' ? addDays(d, 7) : new Date(d.getFullYear(), d.getMonth() + 1, 1)))}
-            className="px-3 py-2 border rounded-lg hover:bg-gray-50"
+            className="px-3 py-2 border rounded-lg hover:shadow-sm transition"
+            style={{ borderColor: 'rgba(60,50,40,0.08)', background: '#fefdfb', color: '#6b5d50' }}
           >
             →
           </button>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-3 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+            className="px-3 py-2 text-sm font-semibold border rounded-lg transition"
+            style={{ borderColor: '#c2410c', color: '#c2410c', background: '#fefdfb' }}
           >
             Сегодня
           </button>
@@ -143,13 +146,15 @@ export default function CalendarPage() {
           <div className="flex border rounded-lg overflow-hidden">
             <button
               onClick={() => setView('week')}
-              className={`px-3 py-2 text-sm ${view === 'week' ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'}`}
+              className={`px-3 py-2 text-sm font-semibold transition ${view === 'week' ? 'text-white' : 'hover:opacity-70'}`}
+              style={view === 'week' ? { background: '#c2410c' } : { background: '#fefdfb', color: '#6b5d50', border: '1px solid rgba(60,50,40,0.08)' }}
             >
               Неделя
             </button>
             <button
               onClick={() => setView('month')}
-              className={`px-3 py-2 text-sm ${view === 'month' ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'}`}
+              className={`px-3 py-2 text-sm font-semibold transition ${view === 'month' ? 'text-white' : 'hover:opacity-70'}`}
+              style={view === 'month' ? { background: '#c2410c' } : { background: '#fefdfb', color: '#6b5d50', border: '1px solid rgba(60,50,40,0.08)' }}
             >
               Месяц
             </button>
@@ -167,11 +172,10 @@ export default function CalendarPage() {
               onClick={() => {
                 if (list.length === 1) setSelectedId(list[0].id)
               }}
-              className={`border rounded-lg p-2 min-h-[120px] flex flex-col gap-1 cursor-pointer transition ${
-                isToday(d) ? 'bg-blue-50 border-blue-300' : 'bg-white hover:shadow-md'
-              } ${view === 'month' && !isCurrentMonth(d) ? 'opacity-50' : ''}`}
+              className={`border rounded-xl p-2 min-h-[120px] flex flex-col gap-1 cursor-pointer transition ${isToday(d) ? 'border-2' : ''} ${view === 'month' && !isCurrentMonth(d) ? 'opacity-50' : ''}`}
+              style={isToday(d) ? { borderColor: '#c2410c', background: '#fef3ed' } : { borderColor: 'rgba(60,50,40,0.08)', background: '#fefdfb' }}
             >
-              <div className="text-xs font-medium text-gray-500">{formatRuDate(d)}</div>
+              <div className="text-xs font-bold" style={{ color: '#a89a8c' }}>{formatRuDate(d)}</div>
               {list.map((c) => (
                 <button
                   key={c.id}
@@ -180,9 +184,8 @@ export default function CalendarPage() {
                     e.stopPropagation()
                     setSelectedId(c.id)
                   }}
-                  className={`text-left text-xs border rounded px-2 py-1 truncate ${
-                    STATUS_COLORS[c.status || ''] || 'bg-blue-100 border-blue-300 text-blue-900'
-                  }`}
+                  className={`text-left text-xs border rounded px-2 py-1 truncate font-semibold ${STATUS_COLORS[c.status || ''] || ''}`}
+                  style={{ borderColor: 'rgba(60,50,40,0.08)' }}
                 >
                   <div className="font-medium truncate">{c.full_name || c.phone}</div>
                   <div className="truncate opacity-80">{c.status}{c.city_to ? ` → ${c.city_to}` : ''}</div>

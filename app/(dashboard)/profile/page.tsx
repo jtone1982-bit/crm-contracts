@@ -88,8 +88,11 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Мой профиль</h1>
-        <Link href="/" className="text-blue-600 hover:underline">← Назад</Link>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#2d2520' }}>Мой профиль</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#a89a8c' }}>Личные данные и настройки</p>
+        </div>
+        <Link href="/" className="hover:underline" style={{ color: '#c2410c' }}>← Назад</Link>
       </div>
 
       {message && (
@@ -100,8 +103,8 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white border rounded-lg p-6 space-y-4">
-        <div className="space-y-1 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+      <form onSubmit={handleSubmit} className="bg-[#fefdfb] border rounded-xl p-6 space-y-4" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+        <div className="space-y-1 text-sm rounded-lg p-3" style={{ background: 'rgba(245,241,234,0.8)', color: '#6b5d50' }}>
           <div>Был на сайте: {formatActivityTime(lastActiveAt)} {lastActiveAt && `(${formatRelativeTime(lastActiveAt)})`}</div>
           <div>Последний вход: {formatActivityTime(lastSignInAt)} {lastSignInAt && `(${formatRelativeTime(lastSignInAt)})`}</div>
         </div>
@@ -189,12 +192,13 @@ export default function ProfilePage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50"
+          className="w-full py-2.5 rounded-lg font-semibold transition disabled:opacity-50"
+          style={{ background: '#c2410c', color: 'white' }}
         >
           {loading ? 'Сохранение...' : 'Сохранить'}
         </button>
       </form>
-      <Link href={`/messages/${userId}`} className="w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-center block">
+      <Link href={`/messages/${userId}`} className="w-full mt-4 py-2.5 rounded-lg font-semibold transition text-center block" style={{ background: '#c2410c', color: 'white' }}>
         Написать личное сообщение
       </Link>
     </div>

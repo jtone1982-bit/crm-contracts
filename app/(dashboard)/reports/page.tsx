@@ -75,14 +75,17 @@ export default function ReportsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Отчёты</h1>
-        <Link href="/" className="text-blue-600 hover:underline">← Назад</Link>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#2d2520' }}>Отчёты</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#a89a8c' }}>Статистика по кандидатам</p>
+        </div>
+        <Link href="/" className="hover:underline" style={{ color: '#c2410c' }}>← Назад</Link>
       </div>
 
       {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg">{error}</div>}
 
       {/* Filters */}
-      <div className="bg-white border rounded-lg p-4 space-y-4">
+      <div className="bg-[#fefdfb] border rounded-xl p-4 space-y-4" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
         <div>
           <label className="block text-sm font-medium mb-2">Статусы</label>
           <div className="flex flex-wrap gap-2">
@@ -90,11 +93,8 @@ export default function ReportsPage() {
               <button
                 key={s}
                 onClick={() => toggleStatus(s)}
-                className={`px-3 py-1 text-sm border rounded-full ${
-                  statuses.includes(s)
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-1 text-sm border rounded-full font-semibold transition ${statuses.includes(s) ? 'text-white border-transparent' : ''}`}
+                style={statuses.includes(s) ? { background: '#c2410c', borderColor: '#c2410c' } : { background: '#fefdfb', color: '#6b5d50', borderColor: 'rgba(60,50,40,0.12)' }}
               >
                 {s}
               </button>
@@ -109,11 +109,8 @@ export default function ReportsPage() {
               <button
                 key={s}
                 onClick={() => toggleSource(s)}
-                className={`px-3 py-1 text-sm border rounded-full ${
-                  sources.includes(s)
-                    ? 'bg-green-600 text-white border-green-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-1 text-sm border rounded-full font-semibold transition ${sources.includes(s) ? 'text-white border-transparent' : ''}`}
+                style={sources.includes(s) ? { background: '#4a7c59', borderColor: '#4a7c59' } : { background: '#fefdfb', color: '#6b5d50', borderColor: 'rgba(60,50,40,0.12)' }}
               >
                 {s}
               </button>
@@ -155,7 +152,8 @@ export default function ReportsPage() {
 
         <a
           href={exportUrl()}
-          className="inline-block px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-500"
+          className="inline-block px-4 py-2 rounded-lg text-sm font-semibold no-underline transition"
+          style={{ background: '#4a7c59', color: 'white' }}
         >
           📊 Экспорт в Excel
         </a>
@@ -166,14 +164,14 @@ export default function ReportsPage() {
       {!loading && data && (
         <>
           {/* Total */}
-          <div className="bg-white border rounded-lg p-4">
-            <div className="text-3xl font-bold text-blue-600">{data.total}</div>
-            <div className="text-sm text-gray-600 mt-1">Всего кандидатов</div>
+          <div className="bg-[#fefdfb] border rounded-xl p-4" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+            <div className="text-3xl font-extrabold" style={{ color: '#c2410c' }}>{data.total}</div>
+            <div className="text-sm mt-1" style={{ color: '#a89a8c' }}>Всего кандидатов</div>
           </div>
 
           {/* By status */}
-          <div className="bg-white border rounded-lg p-4">
-            <h2 className="font-bold mb-3">По статусам</h2>
+          <div className="bg-[#fefdfb] border rounded-xl p-4" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+            <h2 className="font-bold mb-3" style={{ color: '#2d2520' }}>По статусам</h2>
             <div className="space-y-2">
               {data.byStatus.map((s) => (
                 <div key={s.status} className="flex items-center gap-3">
@@ -195,8 +193,8 @@ export default function ReportsPage() {
           </div>
 
           {/* By manager */}
-          <div className="bg-white border rounded-lg p-4">
-            <h2 className="font-bold mb-3">По менеджерам</h2>
+          <div className="bg-[#fefdfb] border rounded-xl p-4" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+            <h2 className="font-bold mb-3" style={{ color: '#2d2520' }}>По менеджерам</h2>
             <div className="space-y-2">
               {data.byManager.map((m) => (
                 <div key={m.manager_name} className="flex items-center gap-3">
@@ -218,8 +216,8 @@ export default function ReportsPage() {
           </div>
 
           {/* By source */}
-          <div className="bg-white border rounded-lg p-4">
-            <h2 className="font-bold mb-3">По источникам</h2>
+          <div className="bg-[#fefdfb] border rounded-xl p-4" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+            <h2 className="font-bold mb-3" style={{ color: '#2d2520' }}>По источникам</h2>
             {data.bySource.length > 0 ? (
             <div className="space-y-2">
               {data.bySource.map((s) => (
