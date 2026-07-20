@@ -28,7 +28,7 @@ export default function UnreadBadge({
   useEffect(() => {
     setMounted(true)
     load()
-    const interval = setInterval(load, 30000)
+    const interval = setInterval(load, 15000)
 
     function handleRefresh() {
       load()

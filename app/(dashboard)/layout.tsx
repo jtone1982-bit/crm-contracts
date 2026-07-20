@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Heartbeat from '@/components/Heartbeat'
+import MobileMenuToggle from '@/components/MobileMenuToggle'
 import { getTheme } from '@/lib/themes'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -43,10 +44,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen flex" style={{ background: theme.bg }}>
       <Heartbeat />
+      <MobileMenuToggle />
 
       {/* Sidebar — server rendered */}
       <aside
-        className="mobile-sidebar fixed left-0 top-0 bottom-0 w-[230px] flex flex-col z-[56] transition-transform duration-200 md:translate-x-0"
+        className="mobile-sidebar fixed left-0 top-0 bottom-0 w-[230px] flex flex-col z-[56] transition-transform duration-200"
         style={{ background: theme.sidebarBg, borderRight: `1px solid ${theme.textMuted}15` }}
       >
         <div className="px-4 pt-5 pb-4 flex items-center justify-between">
@@ -75,6 +77,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link
               key={link.href}
               href={link.href}
+              prefetch={false}
               className="flex items-center gap-2.5 px-2.5 py-2 rounded-md no-underline font-semibold text-[13.5px] transition hover:bg-black/5"
               style={{ color: theme.textSecondary }}
             >

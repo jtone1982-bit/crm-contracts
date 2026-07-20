@@ -77,7 +77,7 @@ export default function ChatNotifications() {
     }
 
     poll()
-    const interval = setInterval(poll, 30000)
+    const interval = setInterval(poll, 15000)
     return () => clearInterval(interval)
   }, [currentUserId, lastIds])
 
