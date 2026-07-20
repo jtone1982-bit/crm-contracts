@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import HamburgerButton from '@/components/HamburgerButton'
 import Heartbeat from '@/components/Heartbeat'
 import { getTheme } from '@/lib/themes'
 
@@ -44,9 +43,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen flex" style={{ background: theme.bg }}>
       <Heartbeat />
-      <HamburgerButton />
 
-      {/* Sidebar — server rendered, always visible on desktop */}
+      {/* Sidebar — server rendered */}
       <aside
         className="mobile-sidebar fixed left-0 top-0 bottom-0 w-[230px] flex flex-col z-[56] transition-transform duration-200 md:translate-x-0"
         style={{ background: theme.sidebarBg, borderRight: `1px solid ${theme.textMuted}15` }}
