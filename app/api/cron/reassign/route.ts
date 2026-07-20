@@ -38,22 +38,26 @@ export async function GET(request: Request) {
     .eq('active', true)
     .or(`last_active_at.lt.${twoDaysAgo},last_active_at.is.null`)
 
-  // A manager without any login yet (last_active_at null) is not considered inactive.
+  // A manager without any login (last_active_at null) IS considered inactive.
+  // Also a manager who hasn't been active for 2+ days is inactive.
   const inactiveManagerIds = new Set(
     (inactiveManagers || [])
-      .filter((m: any) => m.last_active_at !== null)
       .map((m: any) => m.id)
   )
 
-  // Get all active managers for round-robin
+  // Get all active managers for round-robin (exclude inactive ones)
   const { data: activeManagers } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, last_active_at')
     .eq('role', 'manager')
     .eq('approved', true)
     .eq('active', true)
+    .or(`last_active_at.gte.${twoDaysAgo}`)
 
-  if (!activeManagers || activeManagers.length === 0) {
+  // Exclude managers with null last_active_at (never logged in)
+  const activeFiltered = (activeManagers || []).filter((m: any) => m.last_active_at !== null)
+
+  if (activeFiltered.length === 0) {
     return NextResponse.json({ reassigned: 0, error: 'No active managers' })
   }
 
@@ -62,7 +66,7 @@ export async function GET(request: Request) {
 
   for (let i = 0; i < toReassign.length; i++) {
     const candidate: any = toReassign[i]
-    const newManager: any = activeManagers[i % activeManagers.length]
+    const newManager: any = activeFiltered[i % activeFiltered.length]
 
     const { error } = await supabase
       .from('candidates')
