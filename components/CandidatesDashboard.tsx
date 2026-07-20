@@ -21,6 +21,37 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
   const [managerName, setManagerName] = useState('')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sortField, setSortField] = useState<'status' | 'city_to' | 'manager' | 'created_at'>('created_at')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
+  const handleSort = (field: 'status' | 'city_to' | 'manager' | 'created_at') => {
+    if (sortField === field) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDir('asc')
+    }
+  }
+
+  const sortedCandidates = [...(candidates || [])].sort((a, b) => {
+    let aVal: string = ''
+    let bVal: string = ''
+    if (sortField === 'status') {
+      aVal = a.status || ''
+      bVal = b.status || ''
+    } else if (sortField === 'city_to') {
+      aVal = a.city_to || ''
+      bVal = b.city_to || ''
+    } else if (sortField === 'manager') {
+      aVal = a.manager?.full_name || ''
+      bVal = b.manager?.full_name || ''
+    } else if (sortField === 'created_at') {
+      aVal = a.created_at || ''
+      bVal = b.created_at || ''
+    }
+    const cmp = aVal.localeCompare(bVal, 'ru')
+    return sortDir === 'asc' ? cmp : -cmp
+  })
 
   useEffect(() => {
     setLoading(true)
@@ -143,14 +174,22 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
                 <tr>
                   <th className="p-3">Телефон</th>
                   <th className="p-3">ФИО</th>
-                  <th className="p-3">Статус</th>
-                  <th className="p-3">Куда</th>
-                  <th className="p-3">Менеджер</th>
-                  <th className="p-3">Дата создания</th>
+                  <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('status')}>
+                    Статус {sortField === 'status' && (sortDir === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('city_to')}>
+                    Куда {sortField === 'city_to' && (sortDir === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('manager')}>
+                    Менеджер {sortField === 'manager' && (sortDir === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('created_at')}>
+                    Дата {sortField === 'created_at' && (sortDir === 'asc' ? '↑' : '↓')}
+                  </th>
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {candidates?.map((c) => (
+                {sortedCandidates.map((c) => (
                   <tr key={c.id} className="border-t hover:bg-gray-50">
                     <td className="p-3">
                       <div className="flex items-center gap-2">
@@ -188,7 +227,7 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
           </div>
 
           <div className="md:hidden space-y-3">
-            {candidates?.map((c) => (
+            {sortedCandidates.map((c) => (
               <div
                 key={c.id}
                 onClick={() => setSelectedId(c.id)}
