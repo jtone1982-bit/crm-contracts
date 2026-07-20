@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { PipelineStatus, PIPELINE_STATUSES, Candidate } from '@/lib/types'
 import ExcelImportButton from '@/components/ExcelImportButton'
-import UnreadBadge from '@/components/UnreadBadge'
 import CandidateModal from '@/components/CandidateModal'
 import { PhoneActionsMenu } from '@/components/PhoneActionsMenu'
 import { DepartmentFilter } from '@/components/DepartmentFilter'
@@ -52,34 +51,20 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
       <CandidateModal candidateId={selectedId} onClose={() => setSelectedId(null)} statuses={PIPELINE_STATUSES.slice()} />
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold">Кандидаты</h1>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#2d2520' }}>Кандидаты</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#a89a8c' }}>
+            {candidates?.length || 0} всего
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/profile" className="px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
-            Профиль
-          </Link>
           {profile.role === 'admin' && (
             <>
-              <Link href="/admin/managers" className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
-                Менеджеры
-              </Link>
-              <Link href="/calendar" className="px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
-                Календарь
-              </Link>
-              <Link href="/tools" className="px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
-                Инструменты
-              </Link>
-              <Link href="/messages" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 flex items-center">
-                Чат
-                <UnreadBadge />
-              </Link>
-              <a href="/api/export" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-500">
+              <a href="/api/export" className="px-4 py-2 rounded-lg text-sm font-semibold no-underline transition" style={{ background: '#4a7c59', color: 'white' }}>
                 Экспорт Excel
               </a>
-              <Link href="/reports" className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-500">
-                Отчёт
-              </Link>
               <form action="/api/import" method="get">
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500">
+                <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold transition" style={{ background: '#c2410c', color: 'white' }}>
                   Импорт из Sheets
                 </button>
               </form>
@@ -124,10 +109,11 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
           <Link
             key={status}
             href={`/candidates?status=${encodeURIComponent(status)}${departmentId ? `&department_id=${departmentId}` : ''}${managerId ? `&manager_id=${managerId}` : ''}`}
-            className="bg-white border rounded-lg p-4 hover:shadow-md transition"
+            className="bg-[#fefdfb] border rounded-xl p-4 hover:shadow-md transition no-underline"
+            style={{ borderColor: 'rgba(60,50,40,0.08)' }}
           >
-            <div className="text-2xl font-bold text-blue-600">{byStatus[status] || 0}</div>
-            <div className="text-sm text-gray-600 mt-1">{status}</div>
+            <div className="text-2xl font-extrabold" style={{ color: '#c2410c' }}>{byStatus[status] || 0}</div>
+            <div className="text-sm mt-1" style={{ color: '#6b5d50' }}>{status}</div>
           </Link>
         ))}
       </div>

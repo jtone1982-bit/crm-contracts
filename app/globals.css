@@ -1,22 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f1ea;
+  --foreground: #2d2520;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jakarta);
 }
 
 body {
-  background: url('/background.jpg') no-repeat center center fixed;
-  background-size: cover;
-  color: #171717;
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f5f1ea;
+  color: #2d2520;
+  font-family: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, system-ui, sans-serif;
   min-height: 100vh;
 }
 
@@ -27,25 +25,24 @@ body {
 /* Force light background on mobile dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #ffffff;
-    --foreground: #171717;
+    --background: #f5f1ea;
+    --foreground: #2d2520;
   }
   body {
-    background: url('/background.jpg') no-repeat center center fixed;
-    background-size: cover;
-    color: #171717;
+    background: #f5f1ea;
+    color: #2d2520;
   }
 }
 
 /* Make dashboard cards readable over background */
 .bg-white {
-  background-color: rgba(255, 255, 255, 0.92) !important;
+  background-color: #fefdfb !important;
 }
 
 .bg-gray-50 {
-  background-color: rgba(245, 247, 250, 0.85) !important;
+  background-color: rgba(245, 241, 234, 0.85) !important;
 }
 
 .bg-gray-100 {
-  background-color: rgba(243, 244, 246, 0.9) !important;
+  background-color: rgba(240, 235, 227, 0.9) !important;
 }
