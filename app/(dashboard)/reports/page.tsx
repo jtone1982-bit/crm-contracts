@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ManagerSearch } from '@/components/ManagerSearch'
 import { PIPELINE_STATUSES } from '@/lib/types'
+
+interface Manager {
+  id: string
+  full_name: string | null
+  email: string
+}
 
 interface ReportData {
   total: number
@@ -23,8 +28,16 @@ export default function ReportsPage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [sources, setSources] = useState<string[]>([])
+  const [managers, setManagers] = useState<Manager[]>([])
 
   const ALL_SOURCES = ['ГКСштб8', 'ЗЩТ1', 'Регионы', 'НН', 'ККС', 'МСКп', 'КН']
+
+  useEffect(() => {
+    fetch('/api/admin/managers-list')
+      .then((r) => r.json())
+      .then((data) => setManagers(data.profiles || []))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -121,14 +134,22 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-sm font-medium mb-1">Менеджер</label>
-            <ManagerSearch
-              value={managerName}
-              onSelect={(id, name) => {
-                setManagerId(id)
-                setManagerName(name || '')
+            <select
+              value={managerId || ''}
+              onChange={(e) => {
+                setManagerId(e.target.value || undefined)
+                setManagerName('')
               }}
-              placeholder="Все менеджеры"
-            />
+              className="w-full border rounded-lg px-3 py-2"
+              style={{ borderColor: 'rgba(60,50,40,0.12)', background: '#fefdfb', color: '#2d2520' }}
+            >
+              <option value="">Все менеджеры</option>
+              {managers.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.full_name || m.email}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Дата от</label>
