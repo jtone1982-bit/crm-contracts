@@ -60,9 +60,24 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
         <div className="flex flex-wrap gap-2">
           {profile.role === 'admin' && (
             <>
+              <Link href="/admin/managers" className="px-4 py-2 rounded-lg text-sm font-semibold no-underline transition" style={{ background: '#2d2520', color: '#fefdfb' }}>
+                Менеджеры
+              </Link>
+              <Link href="/calendar" className="px-4 py-2 rounded-lg text-sm font-semibold no-underline transition border" style={{ borderColor: 'rgba(60,50,40,0.12)', color: '#6b5d50', background: '#fefdfb' }}>
+                Календарь
+              </Link>
+              <Link href="/tools" className="px-4 py-2 rounded-lg text-sm font-semibold no-underline transition border" style={{ borderColor: 'rgba(60,50,40,0.12)', color: '#6b5d50', background: '#fefdfb' }}>
+                Инструменты
+              </Link>
+              <Link href="/messages" className="px-4 py-2 rounded-lg text-sm font-semibold no-underline transition" style={{ background: '#c2410c', color: 'white' }}>
+                Чат
+              </Link>
               <a href="/api/export" className="px-4 py-2 rounded-lg text-sm font-semibold no-underline transition" style={{ background: '#4a7c59', color: 'white' }}>
                 Экспорт Excel
               </a>
+              <Link href="/reports" className="px-4 py-2 rounded-lg text-sm font-semibold no-underline transition" style={{ background: '#7c5d8c', color: 'white' }}>
+                Отчёт
+              </Link>
               <form action="/api/import" method="get">
                 <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold transition" style={{ background: '#c2410c', color: 'white' }}>
                   Импорт из Sheets
