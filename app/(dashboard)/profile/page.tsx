@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [address, setAddress] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [socials, setSocials] = useState<SocialLink[]>([{ platform: '', url: '' }])
+  const [theme, setTheme] = useState('terracotta')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [userId, setUserId] = useState('')
@@ -33,6 +34,7 @@ export default function ProfilePage() {
         setAdditionalEmail(meta.additional_email || '')
         setAddress(meta.address || '')
         setAvatarUrl(meta.avatar_url || '')
+        setTheme(meta.theme || 'terracotta')
         setUserId(data.user_metadata?.sub || '')
         setLastActiveAt(data.last_active_at || null)
         setLastSignInAt(data.last_sign_in_at || null)
@@ -72,6 +74,7 @@ export default function ProfilePage() {
         additional_email: additionalEmail,
         address,
         avatar_url: avatarUrl,
+        theme,
         social_links: socials.filter((s) => s.platform && s.url),
       }),
     })
@@ -183,10 +186,39 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={addSocial}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm hover:underline"
+            style={{ color: '#c2410c' }}
           >
             + Добавить ссылку
           </button>
+        </div>
+
+        {/* Theme selector */}
+        <div>
+          <label className="block text-sm font-bold mb-2" style={{ color: '#6b5d50' }}>Тема оформления</label>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { id: 'terracotta', name: 'Терракота', accent: '#c2410c', bg: '#f5f1ea' },
+              { id: 'sage', name: 'Мята', accent: '#4a7c59', bg: '#f0f4f0' },
+              { id: 'lavender', name: 'Лаванда', accent: '#7c5d8c', bg: '#f5f0f7' },
+              { id: 'ocean', name: 'Океан', accent: '#2c5f7c', bg: '#eef4f7' },
+              { id: 'graphite', name: 'Графит', accent: '#3a3a3a', bg: '#f0f0f0' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTheme(t.id)}
+                className="px-4 py-2 rounded-lg border-2 transition flex items-center gap-2"
+                style={{
+                  borderColor: theme === t.id ? t.accent : 'rgba(60,50,40,0.12)',
+                  background: t.bg,
+                }}
+              >
+                <span className="w-4 h-4 rounded-full" style={{ background: t.accent }} />
+                <span className="text-sm font-semibold" style={{ color: '#2d2520' }}>{t.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <button

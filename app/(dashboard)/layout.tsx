@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import MobileSidebar from '@/components/MobileSidebar'
 import Heartbeat from '@/components/Heartbeat'
+import { getTheme } from '@/lib/themes'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -19,7 +20,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/pending')
   }
 
-  const iconClass = 'flex-shrink-0 opacity-60'
+  // Get theme from user_metadata
+  const themeName = (user.user_metadata?.theme as string) || 'terracotta'
+  const theme = getTheme(themeName)
 
   const links = [
     {
@@ -60,10 +63,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ]
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#f5f1ea' }}>
+    <div className="min-h-screen flex" style={{ background: theme.bg }}>
       <Heartbeat />
 
-      <MobileSidebar links={links} profile={profile} />
+      <MobileSidebar links={links} profile={profile} theme={theme} />
 
       {/* Main content */}
       <div className="flex-1 md:ml-[230px] min-h-screen">

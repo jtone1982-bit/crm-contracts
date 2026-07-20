@@ -3,6 +3,18 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+interface ThemeColors {
+  accent: string
+  accentHover: string
+  accentLight: string
+  bg: string
+  surface: string
+  sidebarBg: string
+  text: string
+  textSecondary: string
+  textMuted: string
+}
+
 interface SidebarLink {
   href: string
   label: string
@@ -12,9 +24,11 @@ interface SidebarLink {
 export default function MobileSidebar({
   links,
   profile,
+  theme,
 }: {
   links: SidebarLink[]
   profile: { full_name: string | null; email: string; role: string }
+  theme: ThemeColors
 }) {
   const [open, setOpen] = useState(false)
 
@@ -31,7 +45,7 @@ export default function MobileSidebar({
       <button
         onClick={() => setOpen(true)}
         className="md:hidden fixed top-3 left-3 z-[60] w-10 h-10 rounded-lg flex items-center justify-center"
-        style={{ background: '#fefdfb', border: '1px solid rgba(60,50,40,0.12)', color: '#2d2520' }}
+        style={{ background: theme.surface, border: `1px solid ${theme.textMuted}20`, color: theme.text }}
         aria-label="Меню"
       >
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
@@ -48,28 +62,28 @@ export default function MobileSidebar({
         />
       )}
 
-      {/* Sidebar — hidden on mobile, slides in when open */}
+      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 bottom-0 w-[230px] flex flex-col z-[56] transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
-        style={{ background: '#faf7f2', borderRight: '1px solid rgba(60,50,40,0.08)' }}
+        style={{ background: theme.sidebarBg, borderRight: `1px solid ${theme.textMuted}15` }}
       >
         {/* Logo + close */}
         <div className="px-4 pt-5 pb-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 no-underline" onClick={() => setOpen(false)}>
             <div
               className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-white font-extrabold text-[15px]"
-              style={{ background: '#c2410c', boxShadow: '0 2px 8px rgba(194,65,12,0.2)' }}
+              style={{ background: theme.accent, boxShadow: `0 2px 8px ${theme.accent}33` }}
             >
               К
             </div>
-            <span className="font-bold text-[15px] tracking-tight" style={{ color: '#2d2520' }}>
+            <span className="font-bold text-[15px] tracking-tight" style={{ color: theme.text }}>
               CRM Контракты
             </span>
           </Link>
           <button
             onClick={() => setOpen(false)}
             className="md:hidden w-8 h-8 rounded flex items-center justify-center"
-            style={{ color: '#a89a8c' }}
+            style={{ color: theme.textMuted }}
             aria-label="Закрыть"
           >
             ✕
@@ -83,8 +97,8 @@ export default function MobileSidebar({
               key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-2.5 py-2 rounded-md no-underline font-semibold text-[13.5px] transition hover:bg-[rgba(60,50,40,0.04)] hover:text-[#2d2520]"
-              style={{ color: '#6b5d50' }}
+              className="flex items-center gap-2.5 px-2.5 py-2 rounded-md no-underline font-semibold text-[13.5px] transition hover:bg-black/5"
+              style={{ color: theme.textSecondary }}
             >
               {link.icon}
               {link.label}
@@ -93,24 +107,24 @@ export default function MobileSidebar({
         </nav>
 
         {/* User card */}
-        <div className="p-2 border-t" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+        <div className="p-2 border-t" style={{ borderColor: `${theme.textMuted}15` }}>
           <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md">
             <div
               className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
               style={{
                 background: 'linear-gradient(135deg, #d4c9bc, #b5a89a)',
                 border: '2px solid white',
-                boxShadow: '0 0 0 1px rgba(60,50,40,0.08)',
+                boxShadow: `0 0 0 1px ${theme.textMuted}15`,
                 color: '#5a4d40',
               }}
             >
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-bold truncate" style={{ color: '#2d2520' }}>
+              <div className="text-[12px] font-bold truncate" style={{ color: theme.text }}>
                 {profile.full_name?.trim() || profile.email}
               </div>
-              <div className="text-[11px]" style={{ color: '#a89a8c' }}>
+              <div className="text-[11px]" style={{ color: theme.textMuted }}>
                 {profile.role === 'admin' ? 'Админ' : 'Менеджер'}
               </div>
             </div>
@@ -118,7 +132,7 @@ export default function MobileSidebar({
               <button
                 type="submit"
                 className="text-[15px] leading-none p-1 rounded transition hover:text-red-600"
-                style={{ color: '#a89a8c' }}
+                style={{ color: theme.textMuted }}
                 title="Выйти"
               >
                 ⏻

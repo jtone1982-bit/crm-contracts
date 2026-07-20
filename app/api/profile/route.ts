@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { phone, additional_email, address, social_links, avatar_url, full_name } = body
+  const { phone, additional_email, address, social_links, avatar_url, full_name, theme } = body
 
   // Sync display name and avatar into profiles table for messenger and dashboard
   if (full_name || avatar_url) {
@@ -70,6 +70,7 @@ export async function POST(request: Request) {
       address: address ?? user.user_metadata?.address,
       social_links: social_links ?? user.user_metadata?.social_links,
       avatar_url: avatar_url ?? user.user_metadata?.avatar_url,
+      theme: theme ?? user.user_metadata?.theme ?? 'terracotta',
     },
   })
 
