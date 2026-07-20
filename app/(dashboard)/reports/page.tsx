@@ -22,11 +22,15 @@ export default function ReportsPage() {
   const [managerName, setManagerName] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [sources, setSources] = useState<string[]>([])
+
+  const ALL_SOURCES = ['ГКСштб8', 'ЗЩТ1', 'Регионы', 'НН', 'ККС', 'МСКп', 'КН']
 
   useEffect(() => {
     setLoading(true)
     const params = new URLSearchParams()
     if (statuses.length > 0) params.set('statuses', statuses.join(','))
+    if (sources.length > 0) params.set('sources', sources.join(','))
     if (managerId) params.set('manager_id', managerId)
     if (dateFrom) params.set('date_from', dateFrom)
     if (dateTo) params.set('date_to', dateTo)
@@ -44,7 +48,7 @@ export default function ReportsPage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
-  }, [statuses, managerId, dateFrom, dateTo])
+  }, [statuses, sources, managerId, dateFrom, dateTo])
 
   const toggleStatus = (status: string) => {
     setStatuses((prev) =>
@@ -52,9 +56,16 @@ export default function ReportsPage() {
     )
   }
 
+  const toggleSource = (source: string) => {
+    setSources((prev) =>
+      prev.includes(source) ? prev.filter((s) => s !== source) : [...prev, source]
+    )
+  }
+
   const exportUrl = () => {
     const params = new URLSearchParams()
     if (statuses.length > 0) params.set('statuses', statuses.join(','))
+    if (sources.length > 0) params.set('sources', sources.join(','))
     if (managerId) params.set('manager_id', managerId)
     if (dateFrom) params.set('date_from', dateFrom)
     if (dateTo) params.set('date_to', dateTo)
@@ -82,6 +93,25 @@ export default function ReportsPage() {
                 className={`px-3 py-1 text-sm border rounded-full ${
                   statuses.includes(s)
                     ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Источники</label>
+          <div className="flex flex-wrap gap-2">
+            {ALL_SOURCES.map((s) => (
+              <button
+                key={s}
+                onClick={() => toggleSource(s)}
+                className={`px-3 py-1 text-sm border rounded-full ${
+                  sources.includes(s)
+                    ? 'bg-green-600 text-white border-green-600'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -188,11 +218,11 @@ export default function ReportsPage() {
           </div>
 
           {/* By source */}
-          {data.bySource.length > 0 && (
-            <div className="bg-white border rounded-lg p-4">
-              <h2 className="font-bold mb-3">По источникам</h2>
-              <div className="space-y-2">
-                {data.bySource.map((s) => (
+          <div className="bg-white border rounded-lg p-4">
+            <h2 className="font-bold mb-3">По источникам</h2>
+            {data.bySource.length > 0 ? (
+            <div className="space-y-2">
+              {data.bySource.map((s) => (
                   <div key={s.lead_source} className="flex items-center gap-3">
                     <div className="w-32 text-sm truncate">{s.lead_source}</div>
                     <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
@@ -209,8 +239,10 @@ export default function ReportsPage() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-sm text-gray-500">Нет данных по источникам</div>
+            )}
+          </div>
         </>
       )}
     </div>
