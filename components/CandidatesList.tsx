@@ -30,6 +30,33 @@ interface CandidatesListProps {
 
 export default function CandidatesList({ candidates, statusFilter, isAdmin, leadSources, activeSource }: CandidatesListProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<'phone' | 'full_name' | 'city_from' | 'city_to' | 'lead_source' | 'manager' | 'next_contact_date'>('next_contact_date')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDir('asc')
+    }
+  }
+
+  const sortedCandidates = [...(candidates || [])].sort((a, b) => {
+    let aVal: string = ''
+    let bVal: string = ''
+    switch (sortField) {
+      case 'phone': aVal = a.phone || ''; bVal = b.phone || ''; break
+      case 'full_name': aVal = a.full_name || ''; bVal = b.full_name || ''; break
+      case 'city_from': aVal = a.city_from || ''; bVal = b.city_from || ''; break
+      case 'city_to': aVal = a.city_to || ''; bVal = b.city_to || ''; break
+      case 'lead_source': aVal = a.lead_source || ''; bVal = b.lead_source || ''; break
+      case 'manager': aVal = getManagerName(a); bVal = getManagerName(b); break
+      case 'next_contact_date': aVal = a.next_contact_date || ''; bVal = b.next_contact_date || ''; break
+    }
+    const cmp = aVal.localeCompare(bVal, 'ru')
+    return sortDir === 'asc' ? cmp : -cmp
+  })
 
   const getManagerName = (c: Candidate): string => {
     if (!c.manager) return '—'
@@ -91,17 +118,17 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
         <table className="w-full min-w-[600px]">
           <thead className="text-left text-sm" style={{ background: 'rgba(240,235,227,0.6)' }}>
             <tr>
-              <th className="p-3">Телефон</th>
-              <th className="p-3">ФИО</th>
-              <th className="p-3">Откуда</th>
-              <th className="p-3">Куда</th>
-              {isAdmin && <th className="p-3">Источник</th>}
-              <th className="p-3">Менеджер</th>
-              <th className="p-3">Следующий контакт</th>
+              <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('phone')}>Телефон {sortField === 'phone' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+              <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('full_name')}>ФИО {sortField === 'full_name' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+              <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('city_from')}>Откуда {sortField === 'city_from' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+              <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('city_to')}>Куда {sortField === 'city_to' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+              {isAdmin && <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('lead_source')}>Источник {sortField === 'lead_source' && (sortDir === 'asc' ? '↑' : '↓')}</th>}
+              <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('manager')}>Менеджер {sortField === 'manager' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+              <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('next_contact_date')}>Следующий контакт {sortField === 'next_contact_date' && (sortDir === 'asc' ? '↑' : '↓')}</th>
             </tr>
           </thead>
           <tbody className="text-sm">
-            {candidates?.map((c) => (
+            {sortedCandidates.map((c) => (
               <tr key={c.id} className="border-t hover:bg-gray-50">
                 <td className="p-3">
                   <div className="flex items-center gap-2">
@@ -142,7 +169,7 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
       </div>
 
         <div className="md:hidden space-y-3">
-        {candidates?.map((c) => (
+        {sortedCandidates.map((c) => (
           <div
             key={c.id}
             onClick={() => setSelectedId(c.id)}
