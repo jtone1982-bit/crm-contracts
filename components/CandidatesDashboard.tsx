@@ -269,6 +269,11 @@ export default function CandidatesDashboard({ profile, departments }: { profile:
                   <span className="px-2 py-0.5 bg-gray-100 rounded">{c.status}</span>
                   <span>→ {c.city_to || '—'}</span>
                 </div>
+                {c.manager?.full_name && (
+                  <div className="mt-1 text-xs" style={{ color: '#a89a8c' }}>
+                    Менеджер: {c.manager.full_name}
+                  </div>
+                )}
               </div>
             ))}
           </div>
