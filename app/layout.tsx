@@ -11,6 +11,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  manifest: "/manifest.json",
+
   title: "CRM Контракты",
   description: "CRM для работы с кандидатами",
 };
