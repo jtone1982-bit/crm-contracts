@@ -2,10 +2,25 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const STUDENT_ONLY_PATHS = ['/training', '/profile', '/api/training', '/api/profile']
-const PROTECTED_DASHBOARD_PATHS = ['/', '/candidates', '/calendar', '/messages', '/reports', '/tools', '/admin']
+const STUDENT_ALLOWED_PATHS = ['/training', '/profile', '/api/training', '/api/profile']
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Skip static files and auth pages
+  if (
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/static/') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/login' ||
+    pathname === '/auth/signin' ||
+    pathname === '/auth/signout' ||
+    pathname === '/api/auth' ||
+    pathname.startsWith('/auth/')
+  ) {
+    return NextResponse.next({ request })
+  }
+
   const response = NextResponse.next({ request })
 
   const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!)
@@ -14,7 +29,7 @@ export async function middleware(request: NextRequest) {
 
   const token = request.cookies.get(authCookie)?.value
   if (!token) {
-    if (request.nextUrl.pathname.startsWith('/login')) return response
+    if (pathname === '/login') return response
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -35,6 +50,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser(token)
   if (!user) {
+    if (pathname === '/login') return response
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -45,11 +61,9 @@ export async function middleware(request: NextRequest) {
     .single()
 
   const isStudent = profile?.role === 'student'
-  const pathname = request.nextUrl.pathname
 
   if (isStudent) {
-    // Allow only training and profile
-    const isAllowed = STUDENT_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+    const isAllowed = STUDENT_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
     if (!isAllowed) {
       return NextResponse.redirect(new URL('/training', request.url))
     }
@@ -63,5 +77,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/auth|auth/signin|login|pending|.*\\..*).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*$).*)'],
 }
