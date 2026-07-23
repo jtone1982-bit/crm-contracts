@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CRM Контракты</string>
+    <string name="title_activity_main">CRM Контракты</string>
+    <string name="package_name">ru.tone.crmcontracts</string>
+    <string name="custom_url_scheme">ru.tone.crmcontracts</string>
+</resources>
