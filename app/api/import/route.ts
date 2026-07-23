@@ -8,14 +8,9 @@ const STATUS_MARK = 'Забрано'
 // Manager sheets: фамилия → spreadsheet ID
 // Synced with /opt/crm-scripts/chence_to_manager_sheets.py MANAGERS list
 const MANAGER_SHEETS: { name: string; sheetId: string }[] = [
-  { name: 'Зорькина', sheetId: '1339y_T9_mnfyiXHEwpCUa8rhf-OCCIYMgF_eICsxVno' },
-  { name: 'Духина', sheetId: '1MmhqEy5NoYn8ed7fxeP-Od_OOy66xyZtzLHVGwAQSxA' },
-  { name: 'Кира', sheetId: '1m2QLv5IaE9o2d-38-MYgwyzBsGx8TdN7eA13ArCoogs' },
   { name: 'Карымова', sheetId: '1MUMnGPnWf6aIOnhPF6xRZkj-t9oi90i_ZwoU49O9xbY' },
-  { name: 'Жеребцова', sheetId: '1oObzPpps3l8-8eIfJDnDURO63J421840utPR4yV06nk' },
   { name: 'Тарасюк', sheetId: '1Y904RUIhMtlCFdWQtJMkcAJwzfD4NwO_FIlxk3udflo' },
-  { name: 'Лаевская', sheetId: '1VxD0fLNKt_TAmjutm1ClhLNzWsv9UuHf46IZJ7mgomc' },
-  { name: 'Абрегова', sheetId: '1YcJGN6Bp_ksb10Ro04HOabexbix5Ghf8NeiR3a8hTtQ' },
+  { name: 'Пешкова', sheetId: '1zSlpwmDcji_1CMa7ReAzqcPEtdPRWxVuxxqowmjkHek' },
 ]
 
 function normalizePhone(raw: any): string {
@@ -192,11 +187,16 @@ export async function GET() {
     })
   }
 
-  // Insert into CRM
-  const { error: insertError } = await getSupabaseAdmin().from('candidates').insert(allImports)
+  // Insert into CRM with upsert to avoid duplicate key errors
+  const { error: insertError } = await getSupabaseAdmin()
+    .from('candidates')
+    .upsert(allImports, { onConflict: 'phone', ignoreDuplicates: true })
+
   if (insertError) {
     return NextResponse.json({ error: insertError.message, imported: 0 }, { status: 500 })
   }
+
+  const importedCount = allImports.length
 
   // Mark as taken in each sheet
   for (const sheetId of new Set(allSheetUpdates.map((u) => u.sheetId))) {
@@ -216,7 +216,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    imported: allImports.length,
+    imported: importedCount,
     matched: matchedManagers.map((m) => m.sheetName),
     skipped: skippedManagers,
   })
