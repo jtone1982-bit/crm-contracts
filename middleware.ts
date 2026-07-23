@@ -12,11 +12,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/static/') ||
     pathname === '/favicon.ico' ||
-    pathname === '/login' ||
-    pathname === '/auth/signin' ||
-    pathname === '/auth/signout' ||
-    pathname === '/api/auth' ||
-    pathname.startsWith('/auth/')
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth/') ||
+    pathname === '/pending'
   ) {
     return NextResponse.next({ request })
   }
@@ -25,11 +23,17 @@ export async function middleware(request: NextRequest) {
 
   const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!)
   const projectRef = url.hostname.split('.')[0]
-  const authCookie = `sb-${projectRef}-auth-token`
+  const authCookiePrefix = `sb-${projectRef}-auth-token`
 
-  const token = request.cookies.get(authCookie)?.value
-  if (!token) {
-    if (pathname === '/login') return response
+  // Supabase SSR uses chunked cookies: sb-<ref>-auth-token-0, -1, etc.
+  const allCookies = request.cookies.getAll()
+  const authCookie = allCookies
+    .filter((c) => c.name.startsWith(authCookiePrefix))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((c) => c.value)
+    .join('')
+
+  if (!authCookie) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -37,10 +41,10 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookieOptions: { name: authCookie },
+      cookieOptions: { name: authCookiePrefix },
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return allCookies
         },
         setAll() {},
       },
@@ -48,9 +52,8 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser(token)
+  const { data: { user } } = await supabase.auth.getUser(authCookie)
   if (!user) {
-    if (pathname === '/login') return response
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
