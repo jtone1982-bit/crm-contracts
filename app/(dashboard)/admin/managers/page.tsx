@@ -37,8 +37,7 @@ export default async function ManagersPage() {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const fullName = formData.get('fullName') as string
-
-    const isAdmin = formData.get('isAdmin') === 'true'
+    const role = (formData.get('role') as string) || 'manager'
 
     const serviceSupabase = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,10 +59,25 @@ export default async function ManagersPage() {
       id: authData.user.id,
       email,
       full_name: fullName,
-      role: isAdmin ? 'admin' : 'manager',
+      role,
       approved: true,
       active: true,
     })
+
+    revalidatePath('/admin/managers')
+  }
+
+  async function changeRole(formData: FormData) {
+    'use server'
+    const userId = formData.get('userId') as string
+    const newRole = formData.get('newRole') as string
+
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    await serviceSupabase.from('profiles').update({ role: newRole }).eq('id', userId)
 
     revalidatePath('/admin/managers')
   }
@@ -101,10 +115,12 @@ export default async function ManagersPage() {
           <input name="fullName" type="text" required className="w-full border rounded-lg px-3 py-2" />
         </div>
         <div>
-          <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-            <input name="isAdmin" type="checkbox" value="true" className="w-4 h-4" />
-            Сделать администратором
-          </label>
+          <label className="block text-sm font-medium mb-1">Роль</label>
+          <select name="role" required className="w-full border rounded-lg px-3 py-2 bg-white">
+            <option value="manager">Менеджер</option>
+            <option value="student">Студент (только обучение)</option>
+            <option value="admin">Администратор</option>
+          </select>
         </div>
         <button type="submit" className="w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-500">
           Добавить
@@ -112,11 +128,12 @@ export default async function ManagersPage() {
       </form>
 
       <div className="bg-white border rounded-lg overflow-x-auto hidden md:block">
-        <table className="w-full min-w-[500px]">
+        <table className="w-full min-w-[600px]">
           <thead className="bg-gray-100 text-left text-sm">
             <tr>
               <th className="p-3">Email</th>
               <th className="p-3">ФИО</th>
+              <th className="p-3">Роль</th>
               <th className="p-3">Статус</th>
               <th className="p-3">Был на сайте</th>
               <th className="p-3">Последний вход</th>
@@ -128,6 +145,7 @@ export default async function ManagersPage() {
               <tr key={m.id} className="border-t">
                 <td className="p-3">{m.email}</td>
                 <td className="p-3">{m.full_name || '—'}</td>
+                <td className="p-3 capitalize">{m.role}</td>
                 <td className="p-3">
                   {m.approved ? (
                     <span className="text-green-600">Активен</span>
@@ -146,6 +164,18 @@ export default async function ManagersPage() {
                       className={`px-3 py-1 rounded text-white ${m.approved ? 'bg-red-500 hover:bg-red-400' : 'bg-green-500 hover:bg-green-400'}`}
                     >
                       {m.approved ? 'Деактивировать' : 'Одобрить'}
+                    </button>
+                  </form>
+
+                  <form action={changeRole} className="flex items-center gap-2">
+                    <input type="hidden" name="userId" value={m.id} />
+                    <select name="newRole" defaultValue={m.role} className="border rounded px-2 py-1 text-sm">
+                      <option value="manager">Менеджер</option>
+                      <option value="student">Студент</option>
+                      <option value="admin">Админ</option>
+                    </select>
+                    <button type="submit" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm">
+                      Сменить роль
                     </button>
                   </form>
 
@@ -173,6 +203,7 @@ export default async function ManagersPage() {
               )}
             </div>
             <div className="mt-1 text-sm text-gray-700">{m.full_name || '—'}</div>
+            <div className="mt-1 text-xs text-gray-500 capitalize">Роль: {m.role}</div>
             <div className="mt-2 text-xs text-gray-500">
               Был на сайте: {formatActivityTime(m.last_active_at)}
             </div>
@@ -188,6 +219,18 @@ export default async function ManagersPage() {
                   className={`w-full px-3 py-2 rounded text-white text-sm ${m.approved ? 'bg-red-500 hover:bg-red-400' : 'bg-green-500 hover:bg-green-400'}`}
                 >
                   {m.approved ? 'Деактивировать' : 'Одобрить'}
+                </button>
+              </form>
+
+              <form action={changeRole} className="flex items-center gap-2">
+                <input type="hidden" name="userId" value={m.id} />
+                <select name="newRole" defaultValue={m.role} className="flex-1 border rounded px-2 py-2 text-sm">
+                  <option value="manager">Менеджер</option>
+                  <option value="student">Студент</option>
+                  <option value="admin">Админ</option>
+                </select>
+                <button type="submit" className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm">
+                  Сменить
                 </button>
               </form>
 

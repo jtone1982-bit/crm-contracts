@@ -21,6 +21,10 @@ export async function GET(request: Request) {
 
   let query = supabase.from('candidates').select('*, manager:profiles(full_name)')
 
+  if (profile.role === 'student') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   if (profile.role === 'manager') {
     query = query.eq('manager_id', profile.id)
   }

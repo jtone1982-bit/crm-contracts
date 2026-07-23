@@ -31,7 +31,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .map((w: string) => w[0]?.toUpperCase())
     .join('')
 
-  const navLinks = [
+  const isStudent = profile?.role === 'student'
+
+  const allNavLinks = [
     { href: '/', label: 'Кандидаты' },
     { href: '/calendar', label: 'Календарь' },
     { href: '/messages', label: 'Сообщения' },
@@ -41,6 +43,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ...(profile.role === 'admin' ? [{ href: '/admin/managers', label: 'Менеджеры' }] : []),
     { href: '/tools', label: 'Инструменты' },
   ]
+
+  const navLinks = isStudent
+    ? [
+        { href: '/training', label: 'Обучение' },
+        { href: '/profile', label: 'Профиль' },
+      ]
+    : allNavLinks
 
   return (
     <div className="min-h-screen flex" style={{ background: theme.bg }}>
