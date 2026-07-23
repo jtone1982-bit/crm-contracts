@@ -9,7 +9,6 @@ const STATUS_MARK = 'Забрано'
 // Synced with /opt/crm-scripts/chence_to_manager_sheets.py MANAGERS list
 const MANAGER_SHEETS: { name: string; sheetId: string }[] = [
   { name: 'Карымова', sheetId: '1MUMnGPnWf6aIOnhPF6xRZkj-t9oi90i_ZwoU49O9xbY' },
-  { name: 'Тарасюк', sheetId: '1Y904RUIhMtlCFdWQtJMkcAJwzfD4NwO_FIlxk3udflo' },
   { name: 'Пешкова', sheetId: '1zSlpwmDcji_1CMa7ReAzqcPEtdPRWxVuxxqowmjkHek' },
 ]
 
