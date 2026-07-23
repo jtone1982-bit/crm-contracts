@@ -1,6 +1,5 @@
-import { createClient } from '@/lib/supabase-server'
+import { requireManagerOrAdmin } from '@/lib/guards'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { redirect } from 'next/navigation'
 import CandidatesList from '@/components/CandidatesList'
 
 export default async function CandidatesPage({
@@ -10,20 +9,7 @@ export default async function CandidatesPage({
 }) {
   const { status, department_id, manager_id } = await searchParams
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: profile } = await supabase.from('profiles').select('role, id, full_name').eq('id', user.id).single()
-
-  if (!profile) {
-    redirect('/login')
-  }
+  const { supabase, user, profile } = await requireManagerOrAdmin()
 
   const managerId = user.id
   const role = profile.role

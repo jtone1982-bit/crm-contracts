@@ -1,3 +1,4 @@
+import { requireManagerOrAdmin } from '@/lib/guards'
 import { createClient } from '@/lib/supabase-server'
 import { redirect, notFound } from 'next/navigation'
 import { CandidateForm } from '@/components/CandidateForm'
@@ -7,18 +8,10 @@ import StatusHistory from '@/components/StatusHistory'
 export default async function CandidatePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase.from('profiles').select('role, id').eq('id', user.id).single()
-  if (!profile) redirect('/login')
+  const { supabase, user, profile } = await requireManagerOrAdmin()
 
   let query = supabase.from('candidates').select('*').eq('id', id)
-  if (profile.role === 'manager') query = query.eq('manager_id', profile.id)
+  if (profile.role === 'manager') query = query.eq('manager_id', user.id)
 
   const { data: candidate, error: candidateError } = await query.maybeSingle()
   if (candidateError || !candidate) notFound()
@@ -41,7 +34,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
     const values: Record<string, any> = {}
     const fields = [
       'full_name', 'birth_date', 'age', 'citizen_rf', 'city_from', 'city_to', 'lead_source',
-      'health_group', 'health_group_reason', 'diseases', 'scars', 'other_health_issues',
+      'health_group', 'health_group_reason', 'diseases', 'other_health_issues',
       'criminal_record', 'criminal_article', 'documents', 'foreign_documents', 'driver_license',
       'family_relation', 'status', 'notes', 'departure_date', 'departure_datetime',
       'next_contact_date', 'reason_for_failure', 'failure_comment', 'comments', 'telegram_username', 'whatsapp_number', 'max_contact',

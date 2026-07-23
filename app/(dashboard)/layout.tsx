@@ -115,7 +115,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 {profile.full_name?.trim() || profile.email}
               </div>
               <div className="text-[11px]" style={{ color: theme.textMuted }}>
-                {profile.role === 'admin' ? 'Админ' : 'Менеджер'}
+                {profile.role === 'admin' ? 'Админ' : profile.role === 'student' ? 'Студент' : 'Менеджер'}
               </div>
             </div>
             <form action="/auth/signout" method="post">

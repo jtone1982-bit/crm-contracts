@@ -1,17 +1,8 @@
-import { createClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
+import { requireManagerOrAdmin } from '@/lib/guards'
 import CandidatesDashboard from '@/components/CandidatesDashboard'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!profile) redirect('/login')
+  const { supabase, profile } = await requireManagerOrAdmin()
 
   const { data: departments } = await supabase.from('departments').select('*').order('name')
 

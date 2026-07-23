@@ -1,25 +1,13 @@
+import { requireAdmin } from '@/lib/guards'
 import { createClient } from '@/lib/supabase-server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { formatActivityTime, formatRelativeTime } from '@/lib/datetime'
+import { formatActivityTime } from '@/lib/datetime'
 import { ManagerDepartmentSelect } from '@/components/ManagerDepartmentSelect'
 
 export default async function ManagersPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-
-  if (profile?.role !== 'admin') {
-    redirect('/')
-  }
+  const { supabase, user, profile } = await requireAdmin()
 
   const { data: managers } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
   const { data: departments, error: deptError } = await supabase.from('departments').select('*').order('name')
