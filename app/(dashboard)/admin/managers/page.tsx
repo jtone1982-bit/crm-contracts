@@ -84,6 +84,31 @@ export default async function ManagersPage() {
     revalidatePath('/admin/managers')
   }
 
+  async function resetPassword(formData: FormData) {
+    'use server'
+    const userId = formData.get('userId') as string
+    const newPassword = formData.get('newPassword') as string
+
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Пароль должен быть не короче 6 символов')
+    }
+
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { error } = await serviceSupabase.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    revalidatePath('/admin/managers')
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Менеджеры</h1>
@@ -167,6 +192,21 @@ export default async function ManagersPage() {
                     </button>
                   </form>
 
+                  <form action={resetPassword} className="flex items-center gap-2">
+                    <input type="hidden" name="userId" value={m.id} />
+                    <input
+                      name="newPassword"
+                      type="text"
+                      placeholder="новый пароль"
+                      minLength={6}
+                      required
+                      className="border rounded px-2 py-1 text-sm w-32"
+                    />
+                    <button type="submit" className="px-2 py-1 rounded bg-orange-500 hover:bg-orange-400 text-white text-sm">
+                      Сбросить пароль
+                    </button>
+                  </form>
+
                   <ManagerDepartmentSelect
                     userId={m.id}
                     departmentId={m.department_id}
@@ -219,6 +259,21 @@ export default async function ManagersPage() {
                 </select>
                 <button type="submit" className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm">
                   Сменить
+                </button>
+              </form>
+
+              <form action={resetPassword} className="flex items-center gap-2">
+                <input type="hidden" name="userId" value={m.id} />
+                <input
+                  name="newPassword"
+                  type="text"
+                  placeholder="новый пароль"
+                  minLength={6}
+                  required
+                  className="flex-1 border rounded px-2 py-2 text-sm"
+                />
+                <button type="submit" className="px-3 py-2 rounded bg-orange-500 hover:bg-orange-400 text-white text-sm">
+                  Пароль
                 </button>
               </form>
 
