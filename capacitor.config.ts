@@ -7,6 +7,10 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://tone-crm.ru',
     cleartext: false,
+    allowNavigation: ['tone-crm.ru', '*.tone-crm.ru'],
+  },
+  android: {
+    allowMixedContent: true,
   },
 };
 
