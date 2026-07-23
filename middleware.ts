@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
+  if ((pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) && profile?.role !== 'admin') {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
