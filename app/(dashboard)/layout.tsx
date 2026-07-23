@@ -35,6 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { href: '/', label: 'Кандидаты' },
     { href: '/calendar', label: 'Календарь' },
     { href: '/messages', label: 'Сообщения' },
+    { href: '/training', label: 'Обучение' },
     ...(profile.role === 'admin' ? [{ href: '/reports', label: 'Отчёты' }] : []),
     { href: '/profile', label: 'Профиль' },
     ...(profile.role === 'admin' ? [{ href: '/admin/managers', label: 'Менеджеры' }] : []),

@@ -14,7 +14,8 @@ create index if not exists idx_candidate_status_history_candidate_id
 -- RLS: allow authenticated users to read history for candidates they can access
 alter table public.candidate_status_history enable row level security;
 
-create policy if not exists candidate_status_history_select
+drop policy if exists candidate_status_history_select on public.candidate_status_history;
+create policy candidate_status_history_select
   on public.candidate_status_history
   for select
   to authenticated
@@ -27,7 +28,8 @@ create policy if not exists candidate_status_history_select
     )
   );
 
-create policy if not exists candidate_status_history_insert
+drop policy if exists candidate_status_history_insert on public.candidate_status_history;
+create policy candidate_status_history_insert
   on public.candidate_status_history
   for insert
   to authenticated

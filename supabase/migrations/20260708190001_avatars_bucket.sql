@@ -18,19 +18,22 @@ on conflict (id) do update set
 -- 2. Allow authenticated users to upload their own avatar
 -- Note: we still use service role on server, but policy is useful for direct client access if needed
 
-create policy if not exists avatars_select_public
+drop policy if exists avatars_select_public on storage.objects;
+create policy avatars_select_public
   on storage.objects
   for select
   to public
   using (bucket_id = 'avatars');
 
-create policy if not exists avatars_insert_authenticated
+drop policy if exists avatars_insert_authenticated on storage.objects;
+create policy avatars_insert_authenticated
   on storage.objects
   for insert
   to authenticated
   with check (bucket_id = 'avatars');
 
-create policy if not exists avatars_delete_authenticated
+drop policy if exists avatars_delete_authenticated on storage.objects;
+create policy avatars_delete_authenticated
   on storage.objects
   for delete
   to authenticated
