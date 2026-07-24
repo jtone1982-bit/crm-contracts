@@ -939,16 +939,43 @@ def extract_directions_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
 
 
 def extract_selection_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    """Build human-readable selection theory from raw sheet."""
     content = []
+
+    # Header / principle
+    content.append({
+        'type': 'rule',
+        'title': 'Как подобрать направление',
+        'description': (
+            'Подбор направления — это сопоставление параметров кандидата с критериями каждого направления. '
+            'Сначала проверяются жёсткие ограничения: возраст, гражданство, состояние здоровья и судимости. '
+            'Затем — пожелания кандидата и специальные требования: водители, операторы БПЛА, конкретные программы.'
+        ),
+    })
+
+    # Candidate criteria summary
+    content.append({
+        'type': 'rule',
+        'title': 'Параметры кандидата, которые всегда учитываем',
+        'description': (
+            '1. Возраст — каждое направление имеет свой диапазон.\n'
+            '2. Гражданство — РФ, СНГ, иностранцы; для некоторых направлений требуется согласование ФСБ.\n'
+            '3. Состояние здоровья и особенности — ВВК, болезни, шрамы, пластины, группа здоровья.\n'
+            '4. Судимости, условный срок, подследственность — по каждому направлению по-разному.\n'
+            '5. Водительские права и опыт работы с БПЛА — отдельные подразделения и программы.\n'
+            '6. Пожелания по программе и региону.'
+        ),
+    })
+
+    cities = []
     for row in rows[1:]:
         if len(row) < 4:
             continue
         city = normalize_text(row[0])
         if not city:
             continue
-        content.append({
-            'type': 'selection',
-            'title': city,
+        cities.append({
+            'city': city,
             'program': normalize_text(row[1]) if len(row) > 1 else '',
             'edv': normalize_text(row[2]) if len(row) > 2 else '',
             'zp': normalize_text(row[3]) if len(row) > 3 else '',
@@ -964,6 +991,71 @@ def extract_selection_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
             'status': normalize_text(row[13]) if len(row) > 13 else '',
             'note': normalize_text(row[14]) if len(row) > 14 else '',
         })
+
+    active = [c for c in cities if c['status'].lower() != 'стоп']
+
+    # Group by foreign-friendly
+    sni_cities = [c['city'] for c in active if any(w in c['foreign'].lower() for w in ['снг', 'иностран'])]
+    if sni_cities:
+        content.append({
+            'type': 'rule',
+            'title': 'Направления для СНГ и иностранцев',
+            'description': ', '.join(sni_cities),
+        })
+
+    # Group by diseases
+    disease_groups: Dict[str, List[str]] = {}
+    for c in active:
+        for d in [d.strip() for d in c['diseases'].split(',') if d.strip()]:
+            disease_groups.setdefault(d, []).append(c['city'])
+    if disease_groups:
+        content.append({'type': 'section', 'title': 'Особенности здоровья по направлениям'})
+        for disease, city_list in sorted(disease_groups.items(), key=lambda x: -len(x[1])):
+            content.append({
+                'type': 'point',
+                'title': disease.capitalize(),
+                'description': f"Принимают: {', '.join(city_list)}",
+            })
+
+    # Group by special roles
+    bpla_cities = [c['city'] for c in active if 'да' in c['bpla'].lower()]
+    if bpla_cities:
+        content.append({
+            'type': 'rule',
+            'title': 'Направления с потребностью в операторах БПЛА',
+            'description': ', '.join(bpla_cities),
+        })
+
+    driver_cities = [c['city'] for c in active if c['drivers'] and c['drivers'].lower() not in ['', 'нет']]
+    if driver_cities:
+        content.append({
+            'type': 'rule',
+            'title': 'Направления, где нужны водители',
+            'description': ', '.join(driver_cities),
+        })
+
+    # All cities reference cards
+    content.append({'type': 'section', 'title': 'Справочник направлений'})
+    for c in active:
+        content.append({
+            'type': 'selection',
+            'title': c['city'],
+            'program': c['program'],
+            'edv': c['edv'],
+            'zp': c['zp'],
+            'age': c['age'],
+            'vvk': c['vvk'],
+            'foreign': c['foreign'],
+            'diseases': c['diseases'],
+            'health_group': c['health_group'],
+            'drivers': c['drivers'],
+            'bpla': c['bpla'],
+            'programs': c['programs'],
+            'relations': c['relations'],
+            'status': c['status'],
+            'note': c['note'],
+        })
+
     return content
 
 
