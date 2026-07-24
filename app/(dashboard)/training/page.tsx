@@ -251,7 +251,7 @@ export default function TrainingPage() {
           <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
             {item.title && (
               <div className="mb-3">
-                <p className="text-sm font-semibold text-[#2d2520] inline-block">{item.title}</p>
+                <p className="text-base font-semibold text-[#2d2520] leading-snug block">{item.title}</p>
               </div>
             )}
             <div className="flex items-start gap-3">
@@ -267,7 +267,7 @@ export default function TrainingPage() {
       default:
         return (
           <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
-            {item.title && <p className="font-semibold text-[#2d2520] mb-2 inline-block">{item.title}</p>}
+            {item.title && <p className="text-base font-semibold text-[#2d2520] mb-2 leading-snug block">{item.title}</p>}
             {item.description && <p className="text-sm text-[#5c4d3d] leading-relaxed">{item.description}</p>}
           </div>
         )
