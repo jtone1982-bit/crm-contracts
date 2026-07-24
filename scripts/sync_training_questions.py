@@ -854,6 +854,7 @@ def extract_sales_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
         content.append({
             'type': 'tip',
             'num': num,
+            'title': current_section,
             'description': text,
         })
     return content
