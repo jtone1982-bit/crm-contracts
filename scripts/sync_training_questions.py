@@ -3,7 +3,7 @@
 import json
 import os
 import random
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -56,27 +56,9 @@ def make_options(correct: str, distractors: List[str], count: int = 4) -> List[s
         seen.add(d.lower())
         unique_distractors.append(d)
 
-    options = [correct] + unique_distractors[:count - 1]
-    generic = [
-        'Информация не указана в памятке',
-        'Зависит от региона кандидата',
-        'Требуется уточнение у руководителя',
-        'Не влияет на результат подбора',
-        'Решается индивидуально',
-        'Возможно только при наличии медзаключения',
-    ]
-    while len(options) < count:
-        added = False
-        for g in generic:
-            if g.lower() not in seen:
-                seen.add(g.lower())
-                options.append(g)
-                added = True
-                break
-        if not added:
-            options.append('Уточните в памятке')
-            break
-
+    options = [correct] + unique_distractors
+    # Cap to requested count, but don't pad with nonsense if there aren't enough real distractors
+    options = options[:max(2, min(count, len(options)))]
     random.shuffle(options)
     return options
 
@@ -398,7 +380,7 @@ def build_ranks_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
         # Q2: category of the rank
         questions.append({
             'question_text': f"К какой категории относится звание \"{r['rank']}\"?",
-            'options': make_options(r['category'], all_categories),
+            'options': make_options(r['category'], [c for c in all_categories if c != r['category']]),
             'correct_answer': r['category'],
             'explanation': f"Подкатегория: {r['subcategory']}",
             'source_row_data': r,
@@ -408,7 +390,7 @@ def build_ranks_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
         if r['subcategory']:
             questions.append({
                 'question_text': f"К какой подкатегории относится звание \"{r['rank']}\"?",
-                'options': make_options(r['subcategory'], all_subcategories),
+                'options': make_options(r['subcategory'], [s for s in all_subcategories if s != r['subcategory']]),
                 'correct_answer': r['subcategory'],
                 'explanation': f"Категория: {r['category']}",
                 'source_row_data': r,
@@ -419,7 +401,7 @@ def build_ranks_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
             same_sub = [x['rank'] for x in ranks if x['subcategory'] == r['subcategory'] and x['rank'] != r['rank']]
             questions.append({
                 'question_text': f"Какое звание относится к подкатегории \"{r['subcategory']}\"?",
-                'options': make_options(r['rank'], same_sub or all_ranks),
+                'options': make_options(r['rank'], same_sub),
                 'correct_answer': r['rank'],
                 'explanation': f"Категория: {r['category']}",
                 'source_row_data': r,
