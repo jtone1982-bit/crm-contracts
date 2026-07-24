@@ -248,20 +248,20 @@ export default function TrainingPage() {
       case 'point':
       case 'tip':
         return (
-          <div key={idx} className="flex gap-3 p-4 rounded-xl bg-white border border-[#e5ddd2]">
+          <div key={idx} className="flex gap-4 p-4 rounded-xl bg-white border border-[#e5ddd2] items-start">
             {item.num && (
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#f0ebe3] text-[#5c4d3d] flex items-center justify-center text-xs font-bold">
+              <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#f0ebe3] text-[#5c4d3d] flex items-center justify-center text-xs font-bold">
                 {item.num}
               </span>
             )}
-            <p className="text-sm text-[#2d2520]">{item.description}</p>
+            <p className="text-sm text-[#2d2520] leading-relaxed">{item.description}</p>
           </div>
         )
       default:
         return (
           <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
             {item.title && <p className="font-medium text-[#2d2520]">{item.title}</p>}
-            {item.description && <p className="text-sm text-[#5c4d3d] mt-1">{item.description}</p>}
+            {item.description && <p className="text-sm text-[#5c4d3d] mt-1 leading-relaxed">{item.description}</p>}
           </div>
         )
     }
