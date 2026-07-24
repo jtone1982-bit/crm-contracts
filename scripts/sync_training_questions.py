@@ -417,18 +417,23 @@ def build_selection_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
     # Multi-select: which cities accept foreigners/SNG
     foreign_to_cities: Dict[str, List[str]] = {}
     for i in active:
-        if i['foreign']:
-            key = i['foreign']
-            if any(w in key for w in ['снг', 'иностран']):
-                foreign_to_cities.setdefault('СНГ / иностранцы', []).append(i['city'])
-            else:
-                foreign_to_cities.setdefault(key, []).append(i['city'])
+        if not i['foreign']:
+            continue
+        key = i['foreign']
+        # Skip generic meaningless values
+        if key.lower() in ['', 'уточнять'] or 'по согласованию' in key.lower():
+            continue
+        if any(w in key for w in ['снг', 'иностран']):
+            foreign_to_cities.setdefault('СНГ / иностранцы', []).append(i['city'])
+        else:
+            foreign_to_cities.setdefault(key, []).append(i['city'])
     for label, cities in foreign_to_cities.items():
         if len(cities) < 2:
             continue
+        display_label = 'СНГ / иностранцы' if label == 'СНГ / иностранцы' else label
         options = list(dict.fromkeys(cities + all_cities))[:max(len(cities), 8)]
         questions.append({
-            'question_text': f"Какие направления работают с \"{label}\"? (выберите все подходящие)",
+            'question_text': f"Какие направления работают с кандидатами из \"{display_label}\"? (выберите все подходящие)",
             'options': options,
             'correct_answer': cities,
             'explanation': f"{len(cities)} направлений",
@@ -450,7 +455,7 @@ def build_selection_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
         })
 
     # Multi-select: which cities accept drivers
-    driver_cities = [i['city'] for i in active if i['drivers']]
+    driver_cities = [i['city'] for i in active if i['drivers'] and i['drivers'].lower() not in ['', 'нет']]
     if len(driver_cities) >= 2:
         options = list(dict.fromkeys(driver_cities + all_cities))[:max(len(driver_cities), 8)]
         questions.append({
@@ -465,14 +470,15 @@ def build_selection_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
     # Multi-select: which cities match a given VVK strictness
     vvk_to_cities: Dict[str, List[str]] = {}
     for i in active:
-        if i['vvk']:
-            vvk_to_cities.setdefault(i['vvk'], []).append(i['city'])
+        if not i['vvk'] or i['vvk'].lower() in ['', 'любая']:
+            continue
+        vvk_to_cities.setdefault(i['vvk'], []).append(i['city'])
     for vvk, cities in vvk_to_cities.items():
         if len(cities) < 2:
             continue
         options = list(dict.fromkeys(cities + all_cities))[:max(len(cities), 8)]
         questions.append({
-            'question_text': f"Какие направления имеют требования по ВВК \"{vvk}\"? (выберите все подходящие)",
+            'question_text': f"В каких направлениях требования по ВВК \"{vvk}\"? (выберите все подходящие)",
             'options': options,
             'correct_answer': cities,
             'explanation': f"{len(cities)} направлений",
@@ -485,12 +491,12 @@ def build_selection_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
         features = []
         if i['diseases']:
             features.append(f"особенностью здоровья: {i['diseases']}")
-        if i['foreign']:
+        if i['foreign'] and i['foreign'].lower() not in ['', 'уточнять'] and 'по согласованию' not in i['foreign'].lower():
             features.append(f"гражданством: {i['foreign']}")
-        if i['drivers']:
+        if i['drivers'] and i['drivers'].lower() not in ['', 'нет']:
             features.append(f"водительскими правами: {i['drivers']}")
-        if i['bpla']:
-            features.append(f"БПЛА: {i['bpla']}")
+        if i['bpla'] and 'да' in i['bpla'].lower():
+            features.append(f"опытом БПЛА")
         if not features:
             continue
         questions.append({
