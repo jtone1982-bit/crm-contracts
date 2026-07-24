@@ -454,6 +454,81 @@ def build_ranks_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
                 'source_row_data': {'rank': a, 'equivalent': b},
             })
 
+    # Hierarchy questions based on standard Russian military rank order
+    army_order = [
+        'Рядовой', 'Ефрейтор', 'Младший сержант', 'Сержант', 'Старший сержант',
+        'Старшина', 'Прапорщик', 'Старший прапорщик',
+        'Младший лейтенант', 'Лейтенант', 'Старший лейтенант', 'Капитан',
+        'Майор', 'Подполковник', 'Полковник'
+    ]
+    navy_order = [
+        'Матрос', 'Старший матрос', 'Старшина 2-й статьи', 'Старшина 1-й статьи',
+        'Главный старшина', 'Главный корабельный старшина', 'Мичман',
+        'Младший лейтенант', 'Лейтенант', 'Старший лейтенант', 'Капитан-лейтенант',
+        'Капитан 3-го ранга', 'Капитан 2-го ранга', 'Капитан 1-го ранга'
+    ]
+
+    def add_hierarchy_questions(order, prefix):
+        present = [r for r in order if r in all_ranks]
+        for i, rank in enumerate(present):
+            # Next higher rank
+            higher = []
+            for j in range(i + 1, len(present)):
+                if present[j]:
+                    higher.append(present[j])
+                    break
+            if higher:
+                questions.append({
+                    'question_text': f"Какое {prefix} звание стоит выше \"{rank}\"?",
+                    'options': make_options(higher[0], all_ranks),
+                    'correct_answer': higher[0],
+                    'explanation': f"После {rank} идёт {higher[0]}",
+                    'source_row_data': {'rank': rank, 'higher': higher[0]},
+                })
+            # Next lower rank
+            lower = []
+            for j in range(i - 1, -1, -1):
+                if present[j]:
+                    lower.append(present[j])
+                    break
+            if lower:
+                questions.append({
+                    'question_text': f"Какое {prefix} звание стоит ниже \"{rank}\"?",
+                    'options': make_options(lower[0], all_ranks),
+                    'correct_answer': lower[0],
+                    'explanation': f"Перед {rank} идёт {lower[0]}",
+                    'source_row_data': {'rank': rank, 'lower': lower[0]},
+                })
+
+    add_hierarchy_questions(army_order, 'войсковое')
+    add_hierarchy_questions(navy_order, 'корабельное')
+
+    # Command scope questions
+    command_facts = [
+        ('Рядовой', 'не командует'),
+        ('Ефрейтор', 'не командует'),
+        ('Сержант', 'командир отделения'),
+        ('Старший сержант', 'командир отделения'),
+        ('Старшина', 'командир отделения'),
+        ('Прапорщик', 'заместитель командира взвода'),
+        ('Старший прапорщик', 'заместитель командира взвода'),
+        ('Капитан', 'командир роты'),
+        ('Майор', 'командир батальона'),
+        ('Подполковник', 'командир батальона / полка'),
+        ('Полковник', 'командир полка'),
+    ]
+    all_ranks_lower = [r.lower() for r in all_ranks]
+    for rank, scope in command_facts:
+        if rank.lower() in all_ranks_lower:
+            actual_rank = next((r for r in all_ranks if r.lower() == rank.lower()), rank)
+            questions.append({
+                'question_text': f"Какая должность обычно соответствует званию \"{actual_rank}\"?",
+                'options': make_options(scope, [s for _, s in command_facts]),
+                'correct_answer': scope,
+                'explanation': f"Звание: {actual_rank}",
+                'source_row_data': {'rank': actual_rank, 'scope': scope},
+            })
+
     return deduplicate_questions(questions)
 
 def build_afk_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
