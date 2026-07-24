@@ -41,6 +41,7 @@ interface Question {
   question_text: string
   options: string[]
   explanation: string | null
+  question_type: string
 }
 
 export default function TrainingPage() {
@@ -48,7 +49,7 @@ export default function TrainingPage() {
   const [loading, setLoading] = useState(true)
   const [selectedModule, setSelectedModule] = useState<Module | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [result, setResult] = useState<any>(null)
   const [testLoading, setTestLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -126,7 +127,15 @@ export default function TrainingPage() {
 
   async function submitTest() {
     if (!selectedModule) return
-    const answeredCount = Object.keys(answers).length
+
+    // Count answered questions; for multiple choice empty array counts as unanswered
+    const answeredCount = questions.filter((q) => {
+      const ans = answers[q.id]
+      if (q.question_type === 'multiple_choice') {
+        return Array.isArray(ans) && ans.length > 0
+      }
+      return typeof ans === 'string' && ans.trim() !== ''
+    }).length
     if (answeredCount < questions.length) {
       setError(`Ответьте на все вопросы. Осталось ${questions.length - answeredCount}`)
       return
@@ -136,10 +145,17 @@ export default function TrainingPage() {
     setError(null)
 
     try {
+      // Normalize answers payload for API
+      const payloadAnswers: Record<string, string | string[]> = {}
+      questions.forEach((q) => {
+        const ans = answers[q.id]
+        payloadAnswers[q.id] = q.question_type === 'multiple_choice' ? (ans as string[] || []) : (ans as string || '')
+      })
+
       const res = await fetch('/api/training/attempt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module_id: selectedModule.id, answers }),
+        body: JSON.stringify({ module_id: selectedModule.id, answers: payloadAnswers }),
       })
       const data = await res.json()
       setResult(data)
@@ -380,45 +396,61 @@ export default function TrainingPage() {
                 <div className="text-center py-12" style={{ color: '#5c4d3d' }}>Загрузка вопросов...</div>
               ) : (
                 <div className="space-y-4">
-                  {questions.map((q, idx) => (
-                    <div
-                      key={q.id}
-                      className="bg-[#fefdfb] rounded-2xl p-5 shadow-sm"
-                      style={{ border: '1px solid rgba(60,50,40,0.08)' }}
-                    >
-                      <p className="font-medium mb-4" style={{ color: '#2d2520' }}>
-                        {idx + 1}. {q.question_text}
-                      </p>
-                      <div className="space-y-2">
-                        {q.options.map((opt) => {
-                          const checked = answers[q.id] === opt
-                          return (
-                            <label
-                              key={opt}
-                              className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition border ${
-                                checked
-                                  ? 'border-[#c2410c] bg-[#c2410c]/5'
-                                  : 'border-transparent hover:bg-black/[0.02]'
-                              }`}
-                              style={{
-                                background: checked ? undefined : 'rgba(240,235,227,0.4)',
-                              }}
-                            >
-                              <input
-                                type="radio"
-                                name={q.id}
-                                value={opt}
-                                checked={checked}
-                                onChange={() => setAnswers((prev) => ({ ...prev, [q.id]: opt }))}
-                                className="accent-[#c2410c]"
-                              />
-                              <span className="text-sm" style={{ color: '#2d2520' }}>{opt}</span>
-                            </label>
-                          )
-                        })}
+                  {questions.map((q, idx) => {
+                    const isMulti = q.question_type === 'multiple_choice'
+                    const selected = isMulti ? (answers[q.id] as string[] || []) : [answers[q.id] as string].filter(Boolean)
+                    return (
+                      <div
+                        key={q.id}
+                        className="bg-[#fefdfb] rounded-2xl p-5 shadow-sm"
+                        style={{ border: '1px solid rgba(60,50,40,0.08)' }}
+                      >
+                        <p className="font-medium mb-4" style={{ color: '#2d2520' }}>
+                          {idx + 1}. {q.question_text}
+                        </p>
+                        <div className="space-y-2">
+                          {q.options.map((opt) => {
+                            const checked = selected.includes(opt)
+                            return (
+                              <label
+                                key={opt}
+                                className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition border ${
+                                  checked
+                                    ? 'border-[#c2410c] bg-[#c2410c]/5'
+                                    : 'border-transparent hover:bg-black/[0.02]'
+                                }`}
+                                style={{
+                                  background: checked ? undefined : 'rgba(240,235,227,0.4)',
+                                }}
+                              >
+                                <input
+                                  type={isMulti ? 'checkbox' : 'radio'}
+                                  name={q.id}
+                                  value={opt}
+                                  checked={checked}
+                                  onChange={() => {
+                                    if (isMulti) {
+                                      setAnswers((prev) => {
+                                        const current = (prev[q.id] as string[]) || []
+                                        if (current.includes(opt)) {
+                                          return { ...prev, [q.id]: current.filter((o) => o !== opt) }
+                                        }
+                                        return { ...prev, [q.id]: [...current, opt] }
+                                      })
+                                    } else {
+                                      setAnswers((prev) => ({ ...prev, [q.id]: opt }))
+                                    }
+                                  }}
+                                  className="accent-[#c2410c]"
+                                />
+                                <span className="text-sm" style={{ color: '#2d2520' }}>{opt}</span>
+                              </label>
+                            )
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   <button
                     onClick={submitTest}

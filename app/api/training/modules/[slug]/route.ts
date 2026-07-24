@@ -37,7 +37,7 @@ export async function GET(
   }
   const { data: questions, error: questionsError } = await supabase
     .from('training_questions')
-    .select('id, question_text, options, explanation')
+    .select('id, question_text, options, explanation, question_type')
     .eq('module_id', module.id)
     .eq('active', true)
 
@@ -52,6 +52,7 @@ export async function GET(
     question_text: q.question_text,
     options: [...(q.options || [])].sort(() => Math.random() - 0.5),
     explanation: q.explanation,
+    question_type: q.question_type || 'single_choice',
   }))
 
   return NextResponse.json(

@@ -27,11 +27,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Модуль не найден' }, { status: 404 })
   }
 
-  // Get correct answers
   const questionIds = Object.keys(answers)
   const { data: questions } = await supabase
     .from('training_questions')
-    .select('id, correct_answer')
+    .select('id, correct_answer, question_type')
     .in('id', questionIds)
     .eq('module_id', module_id)
 
@@ -40,11 +39,30 @@ export async function POST(request: Request) {
   }
 
   let correct = 0
-  const checkedAnswers: Record<string, { user_answer: string; correct_answer: string; is_correct: boolean }> = {}
+  const checkedAnswers: Record<string, { user_answer: string | string[]; correct_answer: any; is_correct: boolean }> = {}
+
+  function normalize(a: string) {
+    return a.trim().toLowerCase()
+  }
+
+  function arraysEqual(a: string[], b: any[]) {
+    const aa = a.map(normalize).sort()
+    const bb = (b || []).map((x: string) => normalize(x)).sort()
+    return aa.length === bb.length && aa.every((val, idx) => val === bb[idx])
+  }
 
   for (const q of questions) {
-    const userAnswer = answers[q.id] || ''
-    const isCorrect = userAnswer.trim().toLowerCase() === q.correct_answer.trim().toLowerCase()
+    const userAnswer = answers[q.id] || (q.question_type === 'multiple_choice' ? [] : '')
+    let isCorrect = false
+
+    if (q.question_type === 'multiple_choice') {
+      const selected = Array.isArray(userAnswer) ? userAnswer : [userAnswer]
+      isCorrect = arraysEqual(selected, q.correct_answer)
+    } else {
+      const ca = Array.isArray(q.correct_answer) ? q.correct_answer[0] : q.correct_answer
+      isCorrect = normalize(userAnswer) === normalize(ca)
+    }
+
     if (isCorrect) correct++
     checkedAnswers[q.id] = {
       user_answer: userAnswer,

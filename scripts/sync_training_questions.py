@@ -119,6 +119,7 @@ def build_checklist_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
 
 
 def build_disease_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    """Multiple-choice questions from disease reference."""
     questions = []
     diseases = []
     for row in rows[1:]:
@@ -131,34 +132,67 @@ def build_disease_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
             continue
         diseases.append({'disease': disease, 'key': key, 'cities': cities})
 
-    all_cities = [d['cities'] for d in diseases if d['cities']]
     all_diseases = [d['disease'] for d in diseases]
-
+    # Build per-city disease lists for multi-select questions
+    city_to_diseases: Dict[str, List[str]] = {}
     for d in diseases:
-        if d['cities'] and d['cities'].lower() not in ['не найдено', 'нет']:
-            questions.append({
-                'question_text': f"Где принимают кандидатов с диагнозом \"{d['disease']}\"?",
-                'options': make_options(d['cities'], all_cities),
-                'correct_answer': d['cities'],
-                'explanation': f"Ключ поиска по справочнику: {d['key']}",
-                'source_row_data': d,
-            })
-        if d['cities'] and d['cities'].lower() not in ['не найдено', 'нет']:
-            questions.append({
-                'question_text': f"Какой диагноз связан с направлением \"{d['cities']}\" по справочнику?",
-                'options': make_options(d['disease'], all_diseases),
-                'correct_answer': d['disease'],
-                'explanation': f"Ключ поиска: {d['key']}",
-                'source_row_data': d,
-            })
-        if d['key']:
-            questions.append({
-                'question_text': f"Какой диагноз ищут по ключу \"{d['key']}\"?",
-                'options': make_options(d['disease'], all_diseases),
-                'correct_answer': d['disease'],
-                'explanation': f"Города приёма: {d['cities']}",
-                'source_row_data': d,
-            })
+        if not d['cities'] or d['cities'].lower() in ['не найдено', 'нет']:
+            continue
+        for city in [c.strip() for c in d['cities'].split(';') if c.strip()]:
+            city_to_diseases.setdefault(city, []).append(d['disease'])
+
+    all_cities = list(city_to_diseases.keys())
+
+    # Q1: Which cities accept a given disease (multiple correct)
+    for d in diseases:
+        if not d['cities'] or d['cities'].lower() in ['не найдено', 'нет']:
+            continue
+        correct_cities = [c.strip() for c in d['cities'].split(';') if c.strip()]
+        if len(correct_cities) < 2:
+            continue
+        # Ensure all correct cities are in options, then add distractors up to 8 total
+        distractors = [c for c in all_cities if c not in correct_cities]
+        needed = max(0, 8 - len(correct_cities))
+        options = list(dict.fromkeys(correct_cities + distractors))[:max(len(correct_cities), 8)]
+        questions.append({
+            'question_text': f"В каких городах принимают кандидатов с диагнозом \"{d['disease']}\"? (выберите все подходящие)",
+            'options': options,
+            'correct_answer': correct_cities,
+            'explanation': f"Города приёма: {d['cities']}",
+            'source_row_data': d,
+            'question_type': 'multiple_choice',
+        })
+
+    # Q2: Which diseases are accepted in a given city (multiple correct)
+    for city, disease_list in city_to_diseases.items():
+        if len(disease_list) < 2:
+            continue
+        distractors = [d for d in all_diseases if d not in disease_list]
+        needed = max(0, 8 - len(disease_list))
+        options = list(dict.fromkeys(disease_list + distractors))[:max(len(disease_list), 8)]
+        questions.append({
+            'question_text': f"Какие диагнозы принимают в направлении \"{city}\"? (выберите все подходящие)",
+            'options': options,
+            'correct_answer': disease_list,
+            'explanation': f"Всего диагнозов для этого направления: {len(disease_list)}",
+            'source_row_data': {'city': city, 'diseases': disease_list},
+            'question_type': 'multiple_choice',
+        })
+
+    # Q3: Single-choice reverse — find disease by city
+    for d in diseases:
+        if not d['cities'] or d['cities'].lower() in ['не найдено', 'нет']:
+            continue
+        first_city = d['cities'].split(';')[0].strip()
+        questions.append({
+            'question_text': f"Какой диагноз связан с направлением \"{first_city}\"?",
+            'options': make_options(d['disease'], all_diseases),
+            'correct_answer': d['disease'],
+            'explanation': f"Города приёма: {d['cities']}",
+            'source_row_data': d,
+            'question_type': 'single_choice',
+        })
+
     return deduplicate_questions(questions)
 
 
@@ -705,7 +739,7 @@ def extract_diseases_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
         content.append({
             'type': 'card',
             'title': disease,
-            'subtitle': f"Ключ поиска: {key}" if key else '',
+            'subtitle': f"Поиск: {key}" if key else '',
             'description': f"Города приёма: {cities}" if cities else '',
         })
     return content
@@ -1011,7 +1045,7 @@ def sync_questions(supabase: Client, sheet_data: Dict[str, List[List[str]]]):
                     'correct_answer': q['correct_answer'],
                     'explanation': q.get('explanation', ''),
                     'source_row_data': q.get('source_row_data', {}),
-                    'question_type': 'single_choice',
+                    'question_type': q.get('question_type', 'single_choice'),
                     'active': True,
                 })
             supabase.table('training_questions').insert(batch).execute()
