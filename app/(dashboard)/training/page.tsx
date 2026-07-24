@@ -17,6 +17,14 @@ interface TheoryItem {
   vvk?: string
   status?: string
   num?: string
+  program?: string
+  foreign?: string
+  diseases?: string
+  health_group?: string
+  drivers?: string
+  bpla?: string
+  programs?: string
+  relations?: string
 }
 
 interface Module {
@@ -239,18 +247,30 @@ export default function TrainingPage() {
       case 'selection':
         return (
           <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-2">
               <p className="font-medium text-[#2d2520]">{item.title}</p>
               {item.status && item.status.toLowerCase() === 'стоп' && (
                 <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">Стоп</span>
               )}
+              {item.status && item.status.toLowerCase() === 'активно' && (
+                <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">Активно</span>
+              )}
             </div>
-            <div className="flex flex-wrap gap-2 text-xs text-[#5c4d3d]">
-              {item.edv && <span>ЕДВ: {item.edv}</span>}
-              {item.zp && <span>ЗП: {item.zp}</span>}
-              {item.age && <span>Возраст: {item.age}</span>}
-              {item.vvk && <span>ВВК: {item.vvk}</span>}
+            {item.program && <p className="text-xs text-[#c2410c] mb-1">{item.program}</p>}
+            <div className="flex flex-wrap gap-2 text-xs text-[#5c4d3d] mb-2">
+              {item.edv && <span className="px-2 py-1 rounded bg-[#fff7ed] text-[#c2410c]">ЕДВ: {item.edv}</span>}
+              {item.zp && <span className="px-2 py-1 rounded bg-[#f0f9ff] text-[#0369a1]">ЗП: {item.zp}</span>}
+              {item.age && <span className="px-2 py-1 rounded bg-[#f0f0f0]">Возраст: {item.age}</span>}
+              {item.vvk && <span className="px-2 py-1 rounded bg-[#f0f0f0]">ВВК: {item.vvk}</span>}
+              {item.foreign && <span className="px-2 py-1 rounded bg-[#f0f0f0]">{item.foreign}</span>}
+              {item.diseases && <span className="px-2 py-1 rounded bg-[#fff7ed] text-[#c2410c]">Болезни: {item.diseases}</span>}
+              {item.health_group && <span className="px-2 py-1 rounded bg-[#f0f0f0]">Группа: {item.health_group}</span>}
+              {item.drivers && <span className="px-2 py-1 rounded bg-[#f0f0f0]">Водители: {item.drivers}</span>}
+              {item.bpla && <span className="px-2 py-1 rounded bg-[#f0f0f0]">БПЛА: {item.bpla}</span>}
+              {item.programs && <span className="px-2 py-1 rounded bg-[#f0f9ff] text-[#0369a1]">Программы: {item.programs}</span>}
+              {item.relations && <span className="px-2 py-1 rounded bg-[#f0f0f0]">Отношения: {item.relations}</span>}
             </div>
+            {item.note && <p className="text-xs text-[#5c4d3d] mt-2 leading-relaxed">{item.note}</p>}
           </div>
         )
       case 'rank':

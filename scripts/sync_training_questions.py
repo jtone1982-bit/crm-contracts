@@ -21,7 +21,7 @@ MODULES = [
     ('Общие правила', 'rules', 'Общие правила приёма', 30, False),
     ('Программы', 'programs', 'Программы', 40, False),
     ('Направления', 'directions', 'Направления и города', 50, False),
-    ('Подбор', 'selection', 'Подбор направления', 60, False),
+    ('_Подбор_raw', 'selection', 'Подбор направления', 60, False),
     ('Звания', 'ranks', 'Воинские звания', 70, False),
     ('АФК', 'afk', 'Африканский корпус (АФК)', 80, False),
     ('Регламент работы', 'regulations', 'Регламент работы куратора', 90, False),
@@ -357,36 +357,151 @@ def build_directions_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
 
 
 def build_selection_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    """Multiple-choice questions for direction selection using all candidate criteria."""
     questions = []
     items = []
-    for row in rows[3:]:
+    for row in rows[1:]:
         if len(row) < 4:
             continue
         city = normalize_text(row[0])
-        edv = normalize_text(row[1])
-        zp = normalize_text(row[2])
-        age = normalize_text(row[3])
-        if not city or not edv:
+        if not city:
             continue
-        items.append({'city': city, 'edv': edv, 'zp': zp, 'age': age})
-
-    cities = [i['city'] for i in items]
-    for i in items:
-        questions.append({
-            'question_text': f"Какое направление подходит под параметры: ЕДВ {i['edv']}, ЗП {i['zp']}?",
-            'options': make_options(i['city'], cities),
-            'correct_answer': i['city'],
-            'explanation': f"Возраст: {i['age']}",
-            'source_row_data': i,
+        items.append({
+            'city': city,
+            'program': normalize_text(row[1]) if len(row) > 1 else '',
+            'edv': normalize_text(row[2]) if len(row) > 2 else '',
+            'zp': normalize_text(row[3]) if len(row) > 3 else '',
+            'age': normalize_text(row[4]) if len(row) > 4 else '',
+            'vvk': normalize_text(row[5]) if len(row) > 5 else '',
+            'foreign': normalize_text(row[6]) if len(row) > 6 else '',
+            'diseases': normalize_text(row[7]) if len(row) > 7 else '',
+            'health_group': normalize_text(row[8]) if len(row) > 8 else '',
+            'drivers': normalize_text(row[9]) if len(row) > 9 else '',
+            'bpla': normalize_text(row[10]) if len(row) > 10 else '',
+            'programs': normalize_text(row[11]) if len(row) > 11 else '',
+            'relations': normalize_text(row[12]) if len(row) > 12 else '',
+            'status': normalize_text(row[13]) if len(row) > 13 else '',
+            'note': normalize_text(row[14]) if len(row) > 14 else '',
         })
-        if i['zp']:
-            questions.append({
-                'question_text': f"Какие условия предлагает направление \"{i['city']}\"?",
-                'options': make_options(f"ЕДВ {i['edv']}, ЗП {i['zp']}", [f"ЕДВ {x['edv']}, ЗП {x['zp']}" for x in items]),
-                'correct_answer': f"ЕДВ {i['edv']}, ЗП {i['zp']}",
-                'explanation': f"Возраст: {i['age']}",
-                'source_row_data': i,
-            })
+
+    if not items:
+        return []
+
+    active = [i for i in items if i['status'].lower() != 'стоп']
+    if not active:
+        return []
+
+    all_cities = [i['city'] for i in active]
+
+    def parse_list(text: str) -> List[str]:
+        return [t.strip() for t in text.split(',') if t.strip()]
+
+    # Multi-select: which cities accept specific disease
+    disease_to_cities: Dict[str, List[str]] = {}
+    for i in active:
+        for d in parse_list(i['diseases']):
+            disease_to_cities.setdefault(d, []).append(i['city'])
+    for disease, cities in disease_to_cities.items():
+        if len(cities) < 2:
+            continue
+        options = list(dict.fromkeys(cities + all_cities))[:max(len(cities), 8)]
+        questions.append({
+            'question_text': f"В каких направлениях принимают кандидатов с особенностью здоровья \"{disease}\"? (выберите все подходящие)",
+            'options': options,
+            'correct_answer': cities,
+            'explanation': f"{len(cities)} направлений",
+            'source_row_data': {'disease': disease, 'cities': cities},
+            'question_type': 'multiple_choice',
+        })
+
+    # Multi-select: which cities accept foreigners/SNG
+    foreign_to_cities: Dict[str, List[str]] = {}
+    for i in active:
+        if i['foreign']:
+            key = i['foreign']
+            if any(w in key for w in ['снг', 'иностран']):
+                foreign_to_cities.setdefault('СНГ / иностранцы', []).append(i['city'])
+            else:
+                foreign_to_cities.setdefault(key, []).append(i['city'])
+    for label, cities in foreign_to_cities.items():
+        if len(cities) < 2:
+            continue
+        options = list(dict.fromkeys(cities + all_cities))[:max(len(cities), 8)]
+        questions.append({
+            'question_text': f"Какие направления работают с \"{label}\"? (выберите все подходящие)",
+            'options': options,
+            'correct_answer': cities,
+            'explanation': f"{len(cities)} направлений",
+            'source_row_data': {'label': label, 'cities': cities},
+            'question_type': 'multiple_choice',
+        })
+
+    # Multi-select: which cities are suitable for BPLA
+    bpla_cities = [i['city'] for i in active if 'да' in i['bpla'].lower()]
+    if len(bpla_cities) >= 2:
+        options = list(dict.fromkeys(bpla_cities + all_cities))[:max(len(bpla_cities), 8)]
+        questions.append({
+            'question_text': 'В каких направлениях есть потребность в операторах БПЛА? (выберите все подходящие)',
+            'options': options,
+            'correct_answer': bpla_cities,
+            'explanation': f"{len(bpla_cities)} направлений",
+            'source_row_data': {'bpla': 'да', 'cities': bpla_cities},
+            'question_type': 'multiple_choice',
+        })
+
+    # Multi-select: which cities accept drivers
+    driver_cities = [i['city'] for i in active if i['drivers']]
+    if len(driver_cities) >= 2:
+        options = list(dict.fromkeys(driver_cities + all_cities))[:max(len(driver_cities), 8)]
+        questions.append({
+            'question_text': 'В каких направлениях нужны водители? (выберите все подходящие)',
+            'options': options,
+            'correct_answer': driver_cities,
+            'explanation': f"{len(driver_cities)} направлений",
+            'source_row_data': {'drivers': 'да', 'cities': driver_cities},
+            'question_type': 'multiple_choice',
+        })
+
+    # Multi-select: which cities match a given VVK strictness
+    vvk_to_cities: Dict[str, List[str]] = {}
+    for i in active:
+        if i['vvk']:
+            vvk_to_cities.setdefault(i['vvk'], []).append(i['city'])
+    for vvk, cities in vvk_to_cities.items():
+        if len(cities) < 2:
+            continue
+        options = list(dict.fromkeys(cities + all_cities))[:max(len(cities), 8)]
+        questions.append({
+            'question_text': f"Какие направления имеют требования по ВВК \"{vvk}\"? (выберите все подходящие)",
+            'options': options,
+            'correct_answer': cities,
+            'explanation': f"{len(cities)} направлений",
+            'source_row_data': {'vvk': vvk, 'cities': cities},
+            'question_type': 'multiple_choice',
+        })
+
+    # Single-choice: best city for a candidate profile
+    for i in active:
+        features = []
+        if i['diseases']:
+            features.append(f"особенностью здоровья: {i['diseases']}")
+        if i['foreign']:
+            features.append(f"гражданством: {i['foreign']}")
+        if i['drivers']:
+            features.append(f"водительскими правами: {i['drivers']}")
+        if i['bpla']:
+            features.append(f"БПЛА: {i['bpla']}")
+        if not features:
+            continue
+        questions.append({
+            'question_text': f"Какое направление подходит для кандидата с {features[0]}?",
+            'options': make_options(i['city'], all_cities),
+            'correct_answer': i['city'],
+            'explanation': f"Программа: {i['programs'] or i['program']}, примечание: {i['note']}",
+            'source_row_data': i,
+            'question_type': 'single_choice',
+        })
+
     return deduplicate_questions(questions)
 
 
@@ -697,7 +812,7 @@ QUESTION_BUILDERS = {
     'Общие правила': build_rules_questions,
     'Программы': build_programs_questions,
     'Направления': build_directions_questions,
-    'Подбор': build_selection_questions,
+    '_Подбор_raw': build_selection_questions,
     'Звания': build_ranks_questions,
     'АФК': build_afk_questions,
     'Регламент работы': build_regulations_questions,
@@ -819,21 +934,29 @@ def extract_directions_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
 
 def extract_selection_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
     content = []
-    for row in rows[3:]:
+    for row in rows[1:]:
         if len(row) < 4:
             continue
         city = normalize_text(row[0])
-        edv = normalize_text(row[1])
-        zp = normalize_text(row[2])
-        age = normalize_text(row[3])
         if not city:
             continue
         content.append({
             'type': 'selection',
             'title': city,
-            'edv': edv,
-            'zp': zp,
-            'age': age,
+            'program': normalize_text(row[1]) if len(row) > 1 else '',
+            'edv': normalize_text(row[2]) if len(row) > 2 else '',
+            'zp': normalize_text(row[3]) if len(row) > 3 else '',
+            'age': normalize_text(row[4]) if len(row) > 4 else '',
+            'vvk': normalize_text(row[5]) if len(row) > 5 else '',
+            'foreign': normalize_text(row[6]) if len(row) > 6 else '',
+            'diseases': normalize_text(row[7]) if len(row) > 7 else '',
+            'health_group': normalize_text(row[8]) if len(row) > 8 else '',
+            'drivers': normalize_text(row[9]) if len(row) > 9 else '',
+            'bpla': normalize_text(row[10]) if len(row) > 10 else '',
+            'programs': normalize_text(row[11]) if len(row) > 11 else '',
+            'relations': normalize_text(row[12]) if len(row) > 12 else '',
+            'status': normalize_text(row[13]) if len(row) > 13 else '',
+            'note': normalize_text(row[14]) if len(row) > 14 else '',
         })
     return content
 
@@ -961,7 +1084,7 @@ CONTENT_BUILDERS = {
     'Общие правила': extract_rules_content,
     'Программы': extract_programs_content,
     'Направления': extract_directions_content,
-    'Подбор': extract_selection_content,
+    '_Подбор_raw': extract_selection_content,
     'Звания': extract_ranks_content,
     'АФК': extract_afk_content,
     'Регламент работы': extract_regulations_content,
