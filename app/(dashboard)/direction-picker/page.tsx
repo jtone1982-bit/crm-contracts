@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface CityResult {
   title: string
@@ -23,6 +23,7 @@ interface CityResult {
 }
 
 export default function DirectionPickerPage() {
+  const [allowed, setAllowed] = useState<boolean | null>(null)
   const [age, setAge] = useState('')
   const [citizenship, setCitizenship] = useState('')
   const [disease, setDisease] = useState('')
@@ -34,6 +35,18 @@ export default function DirectionPickerPage() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<CityResult[]>([])
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/direction-picker', { method: 'POST', body: '{}' })
+      .then((res) => {
+        if (res.status === 403 || res.status === 401) {
+          setAllowed(false)
+        } else {
+          setAllowed(true)
+        }
+      })
+      .catch(() => setAllowed(false))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -53,6 +66,20 @@ export default function DirectionPickerPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (allowed === null) {
+    return <div className="p-6">Загрузка...</div>
+  }
+
+  if (!allowed) {
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="p-4 rounded-xl bg-red-50 text-red-700 text-sm">
+          У вас нет доступа к этому инструменту.
+        </div>
+      </div>
+    )
   }
 
   return (

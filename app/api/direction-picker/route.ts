@@ -1,11 +1,21 @@
-import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase-server'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role === 'student') {
+    return NextResponse.json({ error: 'Нет доступа' }, { status: 403 })
   }
 
   const body = await request.json()
