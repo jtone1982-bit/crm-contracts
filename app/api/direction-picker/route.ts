@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
+import { isForbiddenArticle } from '@/lib/forbidden-articles'
+import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -160,7 +161,12 @@ export async function POST(request: Request) {
     // Conviction
     if (conviction && conviction.startsWith('yes')) {
       if (convictionArticle) {
-        matches.push(`Судимость: статья ${convictionArticle}`)
+        const articleCheck = isForbiddenArticle(convictionArticle)
+        if (articleCheck.forbidden) {
+          mismatches.push(`Запрещённые статьи: ${articleCheck.matched.join(', ')}`)
+        } else {
+          matches.push(`Судимость: статья ${convictionArticle}`)
+        }
       } else {
         matches.push('Есть судимость')
       }

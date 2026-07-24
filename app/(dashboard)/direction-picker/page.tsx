@@ -1,5 +1,6 @@
 'use client'
 
+import { isForbiddenArticle } from '@/lib/forbidden-articles'
 import { useEffect, useState } from 'react'
 
 interface CityResult {
@@ -243,7 +244,14 @@ export default function DirectionPickerPage() {
             </select>
           </div>
           <div className={conviction.startsWith('yes') ? 'block' : 'hidden'}>
-            <label className="block text-sm font-medium mb-1">Статья судимости</label>
+            <label className="block text-sm font-medium mb-1">
+              Статья судимости
+              {convictionArticle && isForbiddenArticle(convictionArticle).forbidden && (
+                <span className="text-red-600 font-normal ml-2">
+                  Запрещена: {isForbiddenArticle(convictionArticle).matched.join(', ')}
+                </span>
+              )}
+            </label>
             <input
               type="text"
               value={convictionArticle}
