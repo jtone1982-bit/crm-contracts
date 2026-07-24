@@ -15,7 +15,7 @@ export async function GET(
 
   const { data: module, error: moduleError } = await supabase
     .from('training_modules')
-    .select('id, slug, title, description, passing_score, is_final')
+    .select('id, slug, title, description, passing_score, is_final, content')
     .eq('slug', slug)
     .eq('active', true)
     .single()
@@ -24,6 +24,17 @@ export async function GET(
     return NextResponse.json({ error: 'Модуль не найден' }, { status: 404 })
   }
 
+  // Check theory viewed progress (except final)
+  let theoryViewed = false
+  if (!module.is_final) {
+    const { data: theoryProgress } = await supabase
+      .from('training_theory_progress')
+      .select('viewed')
+      .eq('user_id', user.id)
+      .eq('module_id', module.id)
+      .single()
+    theoryViewed = theoryProgress?.viewed || false
+  }
   const { data: questions, error: questionsError } = await supabase
     .from('training_questions')
     .select('id, question_text, options, explanation')
@@ -47,5 +58,6 @@ export async function GET(
     module,
     questions: prepared,
     total: prepared.length,
+    theory_viewed: theoryViewed,
   })
 }

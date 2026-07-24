@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
-"""Sync training questions from Google Sheets 'Памятка 2026' to Supabase.
-
-Generates high-quality multiple-choice questions with plausible distractors.
-The correct answer is never embedded in the question text.
-"""
+"""Sync training questions and theory content from Google Sheets 'Памятка 2026' to Supabase."""
 import json
-import re
 import os
 import random
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -96,6 +91,8 @@ def deduplicate_questions(questions: List[Dict[str, Any]]) -> List[Dict[str, Any
             result.append(q)
     return result
 
+
+# ---------- QUESTION BUILDERS ----------
 
 def build_checklist_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
     questions = []
@@ -341,10 +338,6 @@ def build_selection_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
         items.append({'city': city, 'edv': edv, 'zp': zp, 'age': age})
 
     cities = [i['city'] for i in items]
-    edvs = [i['edv'] for i in items]
-    zps = [i['zp'] for i in items if i['zp']]
-    ages = [i['age'] for i in items if i['age']]
-
     for i in items:
         questions.append({
             'question_text': f"Какое направление подходит под параметры: ЕДВ {i['edv']}, ЗП {i['zp']}?",
@@ -530,29 +523,266 @@ QUESTION_BUILDERS = {
 }
 
 
-def sync_modules(supabase: Client):
+# ---------- CONTENT BUILDERS (theory) ----------
+
+def extract_checklist_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    for row in rows[1:]:
+        if len(row) < 3:
+            continue
+        step = normalize_text(row[0])
+        check = normalize_text(row[1])
+        note = normalize_text(row[2])
+        if not step and not check:
+            continue
+        content.append({
+            'type': 'step',
+            'step': step,
+            'title': check,
+            'description': note,
+        })
+    return content
+
+
+def extract_diseases_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    for row in rows[1:]:
+        if len(row) < 3:
+            continue
+        disease = normalize_text(row[0])
+        key = normalize_text(row[1])
+        cities = normalize_text(row[2])
+        if not disease:
+            continue
+        content.append({
+            'type': 'card',
+            'title': disease,
+            'subtitle': f"Ключ поиска: {key}" if key else '',
+            'description': f"Города приёма: {cities}" if cities else '',
+        })
+    return content
+
+
+def extract_rules_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    for row in rows[1:]:
+        if len(row) < 2:
+            continue
+        rule = normalize_text(row[0])
+        text = normalize_text(row[1])
+        if not rule or not text:
+            continue
+        content.append({
+            'type': 'rule',
+            'title': rule,
+            'description': text,
+        })
+    return content
+
+
+def extract_programs_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    for row in rows[1:]:
+        if len(row) < 5:
+            continue
+        program = normalize_text(row[0])
+        essence = normalize_text(row[1])
+        requirements = normalize_text(row[2])
+        age = normalize_text(row[3])
+        note = normalize_text(row[4]) if len(row) > 4 else ''
+        if not program:
+            continue
+        content.append({
+            'type': 'program',
+            'title': program,
+            'description': essence,
+            'requirements': requirements,
+            'age': age,
+            'note': note,
+        })
+    return content
+
+
+def extract_directions_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    current_region = ''
+    for row in rows[1:]:
+        if len(row) < 3:
+            continue
+        city = normalize_text(row[0])
+        region = normalize_text(row[1]) if len(row) > 1 else ''
+        edv = normalize_text(row[2]) if len(row) > 2 else ''
+        zp = normalize_text(row[3]) if len(row) > 3 else ''
+        age = normalize_text(row[4]) if len(row) > 4 else ''
+        vvk = normalize_text(row[5]) if len(row) > 5 else ''
+        status = normalize_text(row[13]) if len(row) > 13 else ''
+        if region and region != current_region:
+            current_region = region
+            content.append({'type': 'section', 'title': region})
+        if not city:
+            continue
+        content.append({
+            'type': 'direction',
+            'title': city,
+            'status': status,
+            'edv': edv,
+            'zp': zp,
+            'age': age,
+            'vvk': vvk,
+        })
+    return content
+
+
+def extract_selection_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    for row in rows[3:]:
+        if len(row) < 4:
+            continue
+        city = normalize_text(row[0])
+        edv = normalize_text(row[1])
+        zp = normalize_text(row[2])
+        age = normalize_text(row[3])
+        if not city:
+            continue
+        content.append({
+            'type': 'selection',
+            'title': city,
+            'edv': edv,
+            'zp': zp,
+            'age': age,
+        })
+    return content
+
+
+def extract_ranks_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    current_category = ''
+    for row in rows[3:]:
+        if len(row) < 3:
+            continue
+        category = normalize_text(row[0])
+        subcategory = normalize_text(row[1])
+        rank = normalize_text(row[2])
+        note = normalize_text(row[3]) if len(row) > 3 else ''
+        if category and category != current_category:
+            current_category = category
+            content.append({'type': 'section', 'title': category})
+        if not rank:
+            continue
+        content.append({
+            'type': 'rank',
+            'title': rank,
+            'subtitle': subcategory,
+            'description': note,
+        })
+    return content
+
+
+def extract_afk_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    current_section = ''
+    for row in rows[3:]:
+        if len(row) < 3:
+            continue
+        section = normalize_text(row[0])
+        num = normalize_text(row[1])
+        text = normalize_text(row[2])
+        if section and section != current_section:
+            current_section = section
+            content.append({'type': 'section', 'title': section})
+        if not text:
+            continue
+        content.append({
+            'type': 'point',
+            'num': num,
+            'description': text,
+        })
+    return content
+
+
+def extract_regulations_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    current_section = ''
+    for row in rows[3:]:
+        if len(row) < 2:
+            continue
+        section = normalize_text(row[0])
+        text = normalize_text(row[1])
+        if section and section != current_section:
+            current_section = section
+            content.append({'type': 'section', 'title': section})
+        if not text:
+            continue
+        content.append({
+            'type': 'rule',
+            'description': text,
+        })
+    return content
+
+
+def extract_sales_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    content = []
+    current_section = ''
+    for row in rows[3:]:
+        if len(row) < 3:
+            continue
+        section = normalize_text(row[0])
+        num = normalize_text(row[1])
+        text = normalize_text(row[2])
+        if section and section != current_section:
+            current_section = section
+            content.append({'type': 'section', 'title': section})
+        if not text or len(text) < 10:
+            continue
+        content.append({
+            'type': 'tip',
+            'num': num,
+            'description': text,
+        })
+    return content
+
+
+CONTENT_BUILDERS = {
+    'Чек-лист': extract_checklist_content,
+    'Справочник по болезням': extract_diseases_content,
+    'Общие правила': extract_rules_content,
+    'Программы': extract_programs_content,
+    'Направления': extract_directions_content,
+    'Подбор': extract_selection_content,
+    'Звания': extract_ranks_content,
+    'АФК': extract_afk_content,
+    'Регламент работы': extract_regulations_content,
+    'Техника продаж': extract_sales_content,
+}
+
+
+# ---------- SYNC ----------
+
+def sync_modules(supabase: Client, sheet_data: Dict[str, List[List[str]]]):
     existing = supabase.table('training_modules').select('slug').execute().data or []
     existing_slugs = {m['slug'] for m in existing}
 
     for sheet, slug, title, order, is_final in MODULES:
+        content = []
+        builder = CONTENT_BUILDERS.get(sheet)
+        if builder and sheet_data.get(sheet):
+            content = builder(sheet_data[sheet])
+
+        payload = {
+            'title': title,
+            'source_sheet': sheet,
+            'order_index': order,
+            'is_final': is_final,
+            'passing_score': 90 if is_final else 85,
+            'content': content,
+        }
+
         if slug in existing_slugs:
-            supabase.table('training_modules').update({
-                'title': title,
-                'source_sheet': sheet,
-                'order_index': order,
-                'is_final': is_final,
-                'passing_score': 90 if is_final else 85,
-            }).eq('slug', slug).execute()
+            supabase.table('training_modules').update(payload).eq('slug', slug).execute()
         else:
-            supabase.table('training_modules').insert({
-                'slug': slug,
-                'title': title,
-                'source_sheet': sheet,
-                'order_index': order,
-                'is_final': is_final,
-                'passing_score': 90 if is_final else 85,
-                'active': True,
-            }).execute()
+            payload['slug'] = slug
+            payload['active'] = True
+            supabase.table('training_modules').insert(payload).execute()
 
     if 'final-exam' not in existing_slugs:
         supabase.table('training_modules').insert({
@@ -563,6 +793,7 @@ def sync_modules(supabase: Client):
             'is_final': True,
             'passing_score': 90,
             'active': True,
+            'content': [{'type': 'info', 'title': 'Финальный экзамен', 'description': 'Вопросы из всех разделов. Сначала изучите каждый раздел.'}],
         }).execute()
     else:
         supabase.table('training_modules').update({
@@ -644,7 +875,7 @@ def main():
         sheet_data[name] = res.get('values', [])
         print(f"Sheet '{name}': {len(sheet_data[name])} rows")
 
-    sync_modules(supabase)
+    sync_modules(supabase, sheet_data)
     sync_questions(supabase, sheet_data)
     print('Sync complete')
 

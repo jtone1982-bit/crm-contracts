@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data: modules, error } = await supabase
     .from('training_modules')
-    .select('id, slug, title, description, passing_score, order_index, is_final, active')
+    .select('id, slug, title, description, passing_score, order_index, is_final, active, content')
     .eq('active', true)
     .order('order_index', { ascending: true })
 

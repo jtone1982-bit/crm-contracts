@@ -1,7 +1,23 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { BookOpen, CheckCircle, Lock, ChevronRight, AlertCircle, Trophy } from 'lucide-react'
+import { BookOpen, CheckCircle, Lock, ChevronRight, AlertCircle, Trophy, FileText } from 'lucide-react'
+
+interface TheoryItem {
+  type: string
+  title?: string
+  step?: string
+  description?: string
+  subtitle?: string
+  requirements?: string
+  age?: string
+  note?: string
+  edv?: string
+  zp?: string
+  vvk?: string
+  status?: string
+  num?: string
+}
 
 interface Module {
   id: string
@@ -11,6 +27,7 @@ interface Module {
   passing_score: number
   order_index: number
   is_final: boolean
+  content: TheoryItem[]
   progress: {
     status: string
     best_score: number
@@ -35,6 +52,8 @@ export default function TrainingPage() {
   const [result, setResult] = useState<any>(null)
   const [testLoading, setTestLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [theoryViewed, setTheoryViewed] = useState(false)
+  const [showTest, setShowTest] = useState(false)
 
   useEffect(() => {
     fetchModules()
@@ -69,12 +88,17 @@ export default function TrainingPage() {
     setAnswers({})
     setError(null)
     setTestLoading(true)
+    setShowTest(false)
 
     try {
       const res = await fetch(`/api/training/modules/${mod.slug}`)
       const data = await res.json()
       if (data.questions) {
         setQuestions(data.questions)
+        setTheoryViewed(data.theory_viewed || false)
+        if (data.theory_viewed || mod.is_final) {
+          setShowTest(true)
+        }
       } else {
         setError(data.error || 'Вопросы не загрузились')
       }
@@ -83,6 +107,17 @@ export default function TrainingPage() {
     } finally {
       setTestLoading(false)
     }
+  }
+
+  async function markTheoryViewed() {
+    if (!selectedModule) return
+    await fetch('/api/training/theory-viewed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ module_id: selectedModule.id }),
+    })
+    setTheoryViewed(true)
+    setShowTest(true)
   }
 
   async function submitTest() {
@@ -119,6 +154,8 @@ export default function TrainingPage() {
     setResult(null)
     setAnswers({})
     setError(null)
+    setShowTest(false)
+    setTheoryViewed(false)
   }
 
   function getModuleStatus(mod: Module) {
@@ -130,6 +167,100 @@ export default function TrainingPage() {
     if (status === 'completed') return 'bg-green-700'
     if (status === 'in_progress') return 'bg-[#c2410c]'
     return 'bg-[#d6cfc3]'
+  }
+
+  function renderTheoryItem(item: TheoryItem, idx: number) {
+    switch (item.type) {
+      case 'step':
+        return (
+          <div key={idx} className="flex gap-4 p-4 rounded-xl bg-[#fff7ed] border border-[#f0d9c9]">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#c2410c] text-white flex items-center justify-center font-bold text-sm">
+              {item.step}
+            </div>
+            <div>
+              <p className="font-medium text-[#2d2520]">{item.title}</p>
+              {item.description && <p className="text-sm text-[#5c4d3d] mt-1">{item.description}</p>}
+            </div>
+          </div>
+        )
+      case 'section':
+        return (
+          <h3 key={idx} className="text-lg font-bold text-[#2d2520] mt-6 mb-3 pb-2 border-b border-[#e5ddd2]">
+            {item.title}
+          </h3>
+        )
+      case 'card':
+        return (
+          <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
+            <p className="font-medium text-[#2d2520]">{item.title}</p>
+            {item.subtitle && <p className="text-xs text-[#c2410c] mt-1">{item.subtitle}</p>}
+            {item.description && <p className="text-sm text-[#5c4d3d] mt-2">{item.description}</p>}
+          </div>
+        )
+      case 'rule':
+        return (
+          <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
+            {item.title && <p className="font-medium text-[#2d2520] mb-1">{item.title}</p>}
+            <p className="text-sm text-[#5c4d3d]">{item.description}</p>
+          </div>
+        )
+      case 'program':
+        return (
+          <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
+            <p className="font-medium text-[#2d2520]">{item.title}</p>
+            {item.description && <p className="text-sm text-[#5c4d3d] mt-1">{item.description}</p>}
+            <div className="flex flex-wrap gap-2 mt-2 text-xs">
+              {item.requirements && <span className="px-2 py-1 rounded bg-[#fff7ed] text-[#c2410c]">Требования: {item.requirements}</span>}
+              {item.age && <span className="px-2 py-1 rounded bg-[#f0f9ff] text-[#0369a1]">Возраст: {item.age}</span>}
+            </div>
+          </div>
+        )
+      case 'direction':
+      case 'selection':
+        return (
+          <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-medium text-[#2d2520]">{item.title}</p>
+              {item.status && item.status.toLowerCase() === 'стоп' && (
+                <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">Стоп</span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-[#5c4d3d]">
+              {item.edv && <span>ЕДВ: {item.edv}</span>}
+              {item.zp && <span>ЗП: {item.zp}</span>}
+              {item.age && <span>Возраст: {item.age}</span>}
+              {item.vvk && <span>ВВК: {item.vvk}</span>}
+            </div>
+          </div>
+        )
+      case 'rank':
+        return (
+          <div key={idx} className="p-3 rounded-xl bg-white border border-[#e5ddd2]">
+            <p className="font-medium text-[#2d2520]">{item.title}</p>
+            {item.subtitle && <p className="text-xs text-[#5c4d3d]">{item.subtitle}</p>}
+            {item.description && <p className="text-sm text-[#5c4d3d] mt-1">{item.description}</p>}
+          </div>
+        )
+      case 'point':
+      case 'tip':
+        return (
+          <div key={idx} className="flex gap-3 p-4 rounded-xl bg-white border border-[#e5ddd2]">
+            {item.num && (
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#f0ebe3] text-[#5c4d3d] flex items-center justify-center text-xs font-bold">
+                {item.num}
+              </span>
+            )}
+            <p className="text-sm text-[#2d2520]">{item.description}</p>
+          </div>
+        )
+      default:
+        return (
+          <div key={idx} className="p-4 rounded-xl bg-white border border-[#e5ddd2]">
+            {item.title && <p className="font-medium text-[#2d2520]">{item.title}</p>}
+            {item.description && <p className="text-sm text-[#5c4d3d] mt-1">{item.description}</p>}
+          </div>
+        )
+    }
   }
 
   if (loading) {
@@ -232,7 +363,7 @@ export default function TrainingPage() {
                 </button>
               </div>
             </div>
-          ) : (
+          ) : showTest ? (
             <div className="space-y-4">
               {testLoading ? (
                 <div className="text-center py-12" style={{ color: '#5c4d3d' }}>Загрузка вопросов...</div>
@@ -289,6 +420,28 @@ export default function TrainingPage() {
                 </div>
               )}
             </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-[#fff7ed] rounded-xl p-4 border border-[#f0d9c9] flex items-start gap-3">
+                <FileText size={20} className="text-[#c2410c] mt-0.5" />
+                <div>
+                  <p className="font-medium text-[#2d2520]">Изучите материал раздела</p>
+                  <p className="text-sm text-[#5c4d3d]">После просмотра теории откроется тест.</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {(selectedModule.content || []).map((item, idx) => renderTheoryItem(item, idx))}
+              </div>
+
+              <button
+                onClick={markTheoryViewed}
+                className="w-full md:w-auto px-8 py-3 rounded-xl text-sm font-medium text-white shadow-sm hover:shadow-md transition"
+                style={{ background: '#c2410c' }}
+              >
+                Я изучил(а) материал — перейти к тесту
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -305,7 +458,7 @@ export default function TrainingPage() {
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#2d2520' }}>Обучение</h1>
           <p className="text-sm" style={{ color: '#5c4d3d' }}>
-            Пройди все разделы и финальный экзамен. Вопросы автоматически синхронизируются с памяткой.
+            Изучи теорию по каждому разделу, затем пройди тест. Вопросы синхронизируются с памяткой.
           </p>
         </div>
 
