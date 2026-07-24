@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     relations,
     edvMin,
     edvMax,
+    healthGroup,
     praetorian,
     conviction,
     convictionArticle,
@@ -99,7 +100,11 @@ export async function POST(request: Request) {
     // BPLA
     if (bpla === true && city.bpla) {
       if (city.bpla.toLowerCase().includes('да')) {
-        matches.push('Нужны операторы БПЛА')
+        if (healthGroup && healthGroup !== 'А') {
+          mismatches.push('БПЛА требует группу здоровья А')
+        } else {
+          matches.push('Нужны операторы БПЛА')
+        }
       }
     }
 

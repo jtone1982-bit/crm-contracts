@@ -37,6 +37,7 @@ export default function DirectionPickerPage() {
   const [conviction, setConviction] = useState('')
   const [convictionArticle, setConvictionArticle] = useState('')
   const [commissioned, setCommissioned] = useState('')
+  const [healthGroup, setHealthGroup] = useState('')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<CityResult[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -74,6 +75,7 @@ export default function DirectionPickerPage() {
           conviction,
           convictionArticle,
           commissioned,
+          healthGroup,
         }),
       })
       const data = await res.json()
@@ -200,18 +202,46 @@ export default function DirectionPickerPage() {
             <input
               id="bpla"
               type="checkbox"
-              checked={bpla && !conviction.startsWith('yes')}
-              disabled={conviction.startsWith('yes')}
+              checked={bpla && !conviction.startsWith('yes') && healthGroup === 'А'}
+              disabled={conviction.startsWith('yes') || healthGroup !== 'А'}
               onChange={(e) => {
-                if (!conviction.startsWith('yes')) {
+                if (!conviction.startsWith('yes') && healthGroup === 'А') {
                   setBpla(e.target.checked)
                 }
               }}
               className="accent-[#c2410c] disabled:opacity-50"
             />
-            <label htmlFor="bpla" className={conviction.startsWith('yes') ? 'text-sm text-red-600' : 'text-sm'}>
-              Оператор БПЛА {conviction.startsWith('yes') && '(недоступно при судимости)'}
+            <label
+              htmlFor="bpla"
+              className={
+                conviction.startsWith('yes') || healthGroup !== 'А'
+                  ? 'text-sm text-red-600'
+                  : 'text-sm'
+              }
+            >
+              Оператор БПЛА
+              {conviction.startsWith('yes') && ' (недоступно при судимости)'}
+              {!conviction.startsWith('yes') && healthGroup && healthGroup !== 'А' && ' (только группа А)'}
             </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Группа здоровья</label>
+            <select
+              value={healthGroup}
+              onChange={(e) => {
+                setHealthGroup(e.target.value)
+                if (e.target.value !== 'А') setBpla(false)
+              }}
+              className="w-full px-3 py-2 rounded-xl border text-sm"
+              style={{ borderColor: '#e5ddd2', background: '#fff' }}
+            >
+              <option value="">Не выбрано</option>
+              <option value="А">А</option>
+              <option value="Б">Б</option>
+              <option value="В">В</option>
+              <option value="Г">Г</option>
+              <option value="Д">Д</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Прапорщик</label>
