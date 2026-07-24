@@ -130,6 +130,9 @@ def build_disease_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
         cities = normalize_text(row[2])
         if not disease:
             continue
+        # Skip conviction entries — they belong to selection/direction picker, not disease reference
+        if 'судим' in disease.lower() or 'судим' in key.lower():
+            continue
         diseases.append({'disease': disease, 'key': key, 'cities': cities})
 
     all_diseases = [d['disease'] for d in diseases]
@@ -857,6 +860,9 @@ def extract_diseases_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
         cities = normalize_text(row[2])
         if not disease:
             continue
+        # Skip conviction entries — not part of disease reference
+        if 'судим' in disease.lower() or 'судим' in key.lower():
+            continue
         content.append({
             'type': 'card',
             'title': disease,
@@ -881,7 +887,6 @@ def extract_rules_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
             'description': text,
         })
     return content
-
 
 def extract_programs_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
     content = []
