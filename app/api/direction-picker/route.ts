@@ -28,6 +28,10 @@ export async function POST(request: Request) {
     relations,
     edvMin,
     edvMax,
+    praetorian,
+    conviction,
+    convictionArticle,
+    commissioned,
   } = body
 
   // Load raw selection data from training_modules content
@@ -126,6 +130,43 @@ export async function POST(request: Request) {
         matches.push(`ЕДВ ${city.edv} в диапазоне`)
       } else if (cityEdv) {
         mismatches.push(`ЕДВ ${city.edv} вне диапазона`)
+      }
+    }
+
+    // Praetorian
+    if (praetorian) {
+      const note = (city.note || '').toLowerCase()
+      if (note.includes('прапорщик')) {
+        if (praetorian === 'да') {
+          matches.push('Прапорщики принимаются')
+        } else {
+          mismatches.push('Прапорщики принимаются, а кандидат не прапорщик')
+        }
+      }
+    }
+
+    // Commissioned
+    if (commissioned) {
+      const note = (city.note || '').toLowerCase()
+      if (note.includes('комисс')) {
+        if (commissioned === 'да') {
+          matches.push('Подходит для комиссованных')
+        } else {
+          mismatches.push('Есть упоминание комиссии')
+        }
+      }
+    }
+
+    // Conviction
+    if (conviction && conviction.startsWith('yes')) {
+      if (convictionArticle) {
+        matches.push(`Судимость: статья ${convictionArticle}`)
+      } else {
+        matches.push('Есть судимость')
+      }
+      // If BPLA requested but has conviction — add mismatch
+      if (bpla === true) {
+        mismatches.push('БПЛА недоступен при наличии судимости')
       }
     }
 
