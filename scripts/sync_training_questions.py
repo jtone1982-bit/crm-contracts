@@ -589,26 +589,37 @@ def build_regulations_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
 
 
 def build_sales_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    """Build questions from 'Техника продаж' sheet with proper section/body parsing."""
     questions = []
     items = []
     current_section = ''
-    for row in rows[3:]:
-        if len(row) < 3:
-            continue
-        section = normalize_text(row[0]) or current_section
-        num = normalize_text(row[1])
-        text = normalize_text(row[2])
-        if section:
-            current_section = section
-        if not text or len(text) < 10:
-            continue
-        items.append({'section': section, 'num': num, 'text': text})
 
-    all_texts = [i['text'] for i in items]
+    for row in rows[3:]:
+        if not row:
+            continue
+        col0 = normalize_text(row[0]) if len(row) > 0 else ''
+        col1 = normalize_text(row[1]) if len(row) > 1 else ''
+        col2 = normalize_text(row[2]) if len(row) > 2 else ''
+
+        if not col0 and not col1 and not col2:
+            continue
+
+        if col0:
+            current_section = col0
+            continue
+
+        # Label + body
+        if col2 and len(col1) <= 45:
+            items.append({'section': current_section, 'label': col1, 'text': col2})
+        elif col1:
+            items.append({'section': current_section, 'label': '', 'text': col1})
+
     all_sections = list(set(i['section'] for i in items if i['section']))
+    all_texts = [i['text'] for i in items]
 
     for i in items:
         same_section = [x['text'] for x in items if x['section'] == i['section'] and x['text'] != i['text']]
+        # Q1: which body belongs to section
         questions.append({
             'question_text': f"Какой совет/пункт относится к разделу техники продаж \"{i['section']}\"?",
             'options': make_options(i['text'], same_section or all_texts),
@@ -616,13 +627,16 @@ def build_sales_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
             'explanation': '',
             'source_row_data': i,
         })
-        questions.append({
-            'question_text': f"К какому разделу техники продаж относится: \"{i['text']}\"?",
-            'options': make_options(i['section'], all_sections),
-            'correct_answer': i['section'],
-            'explanation': '',
-            'source_row_data': i,
-        })
+        # Q2: which section does this body belong to
+        if i['section']:
+            questions.append({
+                'question_text': f"К какому разделу техники продаж относится: \"{i['text']}\"?",
+                'options': make_options(i['section'], [s for s in all_sections if s != i['section']]),
+                'correct_answer': i['section'],
+                'explanation': '',
+                'source_row_data': i,
+            })
+
     return deduplicate_questions(questions)
 
 
