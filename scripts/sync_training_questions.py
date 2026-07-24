@@ -77,7 +77,7 @@ def deduplicate_questions(questions: List[Dict[str, Any]]) -> List[Dict[str, Any
 # ---------- QUESTION BUILDERS ----------
 
 def build_checklist_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
-    """Build practical checklist questions using step descriptions and notes."""
+    """Build practical situational checklist questions from notes."""
     questions = []
     items = []
     for row in rows[1:]:
@@ -91,46 +91,28 @@ def build_checklist_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
         items.append({'step': step, 'check': check, 'note': note})
 
     checks = [i['check'] for i in items]
+    notes = [i['note'] for i in items if i['note']]
 
     for i in items:
-        # Q1: What to check for a candidate with a specific situation
+        # Main question: what to check given a real work situation
         if i['note'] and len(i['note']) > 10:
+            # Situation described in note, answer is the check item
             questions.append({
-                'question_text': f"Какой пункт чек-листа соответствует ситуации: {i['note']}?",
+                'question_text': f"{i['note']}",
                 'options': make_options(i['check'], checks),
                 'correct_answer': i['check'],
                 'explanation': f"Шаг {i['step']}: {i['check']}",
                 'source_row_data': i,
             })
 
-        # Q2: Reverse — given check, what is the step number
-        questions.append({
-            'question_text': f"О каком шаге чек-листа идёт речь: \"{i['check']}\"?",
-            'options': make_options(i['step'], [x['step'] for x in items if x['step'] != i['step']]),
-            'correct_answer': i['step'],
-            'explanation': i['note'] or f"Шаг {i['step']}: {i['check']}",
-            'source_row_data': i,
-        })
-
-    # Sequence questions
-    for idx, i in enumerate(items):
-        if idx > 0:
-            prev = items[idx - 1]
+        # Reverse question: what do we verify at this step?
+        if i['note'] and len(i['note']) > 10:
             questions.append({
-                'question_text': f"Какой пункт чек-листа идёт перед \"{i['check']}\"?",
-                'options': make_options(prev['check'], checks),
-                'correct_answer': prev['check'],
-                'explanation': f"Шаг {prev['step']} перед шагом {i['step']}",
-                'source_row_data': {'current': i, 'previous': prev},
-            })
-        if idx < len(items) - 1:
-            nxt = items[idx + 1]
-            questions.append({
-                'question_text': f"Какой пункт чек-листа идёт после \"{i['check']}\"?",
-                'options': make_options(nxt['check'], checks),
-                'correct_answer': nxt['check'],
-                'explanation': f"Шаг {nxt['step']} после шага {i['step']}",
-                'source_row_data': {'current': i, 'next': nxt},
+                'question_text': f"Что важно проверить на шаге \"{i['check']}\"?",
+                'options': make_options(i['note'], notes),
+                'correct_answer': i['note'],
+                'explanation': f"Шаг {i['step']}: {i['check']}",
+                'source_row_data': i,
             })
 
     return deduplicate_questions(questions)
