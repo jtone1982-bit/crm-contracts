@@ -253,13 +253,15 @@ def build_directions_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
             continue
         directions.append({'city': city, 'region': region, 'edv': edv, 'zp': zp, 'age': age, 'vvk': vvk, 'status': status})
 
-    cities = [d['city'] for d in directions]
-    edvs = [d['edv'] for d in directions if d['edv']]
-    zps = [d['zp'] for d in directions if d['zp']]
-    ages = [d['age'] for d in directions if d['age']]
-    vvks = [d['vvk'] for d in directions if d['vvk']]
-
     active = [d for d in directions if d['status'].lower() != 'стоп']
+    if not active:
+        return []
+
+    cities = [d['city'] for d in active]
+    edvs = [d['edv'] for d in active if d['edv']]
+    zps = [d['zp'] for d in active if d['zp']]
+    ages = [d['age'] for d in active if d['age']]
+    vvks = [d['vvk'] for d in active if d['vvk']]
 
     for d in active:
         if d['edv']:
@@ -747,6 +749,8 @@ def extract_directions_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
         age = normalize_text(row[4]) if len(row) > 4 else ''
         vvk = normalize_text(row[5]) if len(row) > 5 else ''
         status = normalize_text(row[13]) if len(row) > 13 else ''
+        if status.lower() == 'стоп':
+            continue
         if region and region != current_region:
             current_region = region
             content.append({'type': 'section', 'title': region})
