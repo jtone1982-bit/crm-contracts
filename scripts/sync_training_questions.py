@@ -358,6 +358,7 @@ def build_selection_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
 
 
 def build_ranks_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    """Questions from 'Звания' using notes, subcategories and equivalents."""
     questions = []
     ranks = []
     current_category = ''
@@ -372,29 +373,88 @@ def build_ranks_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
             current_category = category
         if not rank:
             continue
-        ranks.append({'category': current_category, 'subcategory': subcategory, 'rank': rank, 'note': note})
+        ranks.append({
+            'category': current_category,
+            'subcategory': subcategory,
+            'rank': rank,
+            'note': note,
+        })
 
     all_ranks = [r['rank'] for r in ranks]
     all_categories = list(set(r['category'] for r in ranks if r['category']))
+    all_subcategories = list(set(r['subcategory'] for r in ranks if r['subcategory']))
 
     for r in ranks:
-        same_cat = [x['rank'] for x in ranks if x['category'] == r['category'] and x['rank'] != r['rank']]
-        questions.append({
-            'question_text': f"Какое звание относится к категории \"{r['category']}\"?",
-            'options': make_options(r['rank'], same_cat or all_ranks),
-            'correct_answer': r['rank'],
-            'explanation': r['note'] or f"Подкатегория: {r['subcategory']}",
-            'source_row_data': r,
-        })
+        # Q1: by detailed note/description guess the rank
+        if r['note'] and len(r['note']) > 15:
+            questions.append({
+                'question_text': f"О каком звании идёт речь: {r['note']}?",
+                'options': make_options(r['rank'], all_ranks),
+                'correct_answer': r['rank'],
+                'explanation': f"Категория: {r['category']}, подкатегория: {r['subcategory']}",
+                'source_row_data': r,
+            })
+
+        # Q2: category of the rank
         questions.append({
             'question_text': f"К какой категории относится звание \"{r['rank']}\"?",
             'options': make_options(r['category'], all_categories),
             'correct_answer': r['category'],
-            'explanation': r['note'] or '',
+            'explanation': f"Подкатегория: {r['subcategory']}",
             'source_row_data': r,
         })
-    return deduplicate_questions(questions)
 
+        # Q3: subcategory
+        if r['subcategory']:
+            questions.append({
+                'question_text': f"К какой подкатегории относится звание \"{r['rank']}\"?",
+                'options': make_options(r['subcategory'], all_subcategories),
+                'correct_answer': r['subcategory'],
+                'explanation': f"Категория: {r['category']}",
+                'source_row_data': r,
+            })
+
+        # Q4: which rank belongs to subcategory
+        if r['subcategory']:
+            same_sub = [x['rank'] for x in ranks if x['subcategory'] == r['subcategory'] and x['rank'] != r['rank']]
+            questions.append({
+                'question_text': f"Какое звание относится к подкатегории \"{r['subcategory']}\"?",
+                'options': make_options(r['rank'], same_sub or all_ranks),
+                'correct_answer': r['rank'],
+                'explanation': f"Категория: {r['category']}",
+                'source_row_data': r,
+            })
+
+    # Equivalents between naval and army ranks from notes
+    equivalents = []
+    for r in ranks:
+        note = r['note'].lower()
+        if 'соответствует званию' in note or 'соответствует' in note or 'совпадает' in note:
+            # Try to extract mentioned rank
+            for other in ranks:
+                if other['rank'].lower() in note and other['rank'] != r['rank']:
+                    equivalents.append((r['rank'], other['rank'], r['category']))
+                    break
+
+    for a, b, cat in equivalents:
+        if cat == 'Корабельные':
+            questions.append({
+                'question_text': f"Какому войсковому званию соответствует корабельное звание \"{a}\"?",
+                'options': make_options(b, all_ranks),
+                'correct_answer': b,
+                'explanation': f"Корабельное звание: {a}",
+                'source_row_data': {'rank': a, 'equivalent': b},
+            })
+        else:
+            questions.append({
+                'question_text': f"Какому корабельному званию соответствует войсковое звание \"{a}\"?",
+                'options': make_options(b, all_ranks),
+                'correct_answer': b,
+                'explanation': f"Войсковое звание: {a}",
+                'source_row_data': {'rank': a, 'equivalent': b},
+            })
+
+    return deduplicate_questions(questions)
 
 def build_afk_questions(rows: List[List[str]]) -> List[Dict[str, Any]]:
     questions = []
