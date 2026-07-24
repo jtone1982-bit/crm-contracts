@@ -8,7 +8,6 @@ interface CityResult {
   edv?: string
   zp?: string
   age?: string
-  vvk?: string
   foreign?: string
   diseases?: string
   health_group?: string
@@ -29,7 +28,9 @@ export default function DirectionPickerPage() {
   const [disease, setDisease] = useState('')
   const [drivers, setDrivers] = useState(false)
   const [bpla, setBpla] = useState(false)
-  const [vvk, setVvk] = useState('')
+  const [relations, setRelations] = useState('')
+  const [edvMin, setEdvMin] = useState('')
+  const [edvMax, setEdvMax] = useState('')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<CityResult[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +43,7 @@ export default function DirectionPickerPage() {
       const res = await fetch('/api/direction-picker', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ age, citizenship, disease, drivers, bpla, vvk }),
+        body: JSON.stringify({ age, citizenship, disease, drivers, bpla, relations, edvMin, edvMax }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Ошибка')
@@ -104,18 +105,41 @@ export default function DirectionPickerPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">ВВК</label>
+            <label className="block text-sm font-medium mb-1">Отношения</label>
             <select
-              value={vvk}
-              onChange={(e) => setVvk(e.target.value)}
+              value={relations}
+              onChange={(e) => setRelations(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border text-sm"
               style={{ borderColor: '#e5ddd2', background: '#fff' }}
             >
-              <option value="">Любая</option>
-              <option value="строгая">Строгая</option>
-              <option value="средняя">Средняя</option>
-              <option value="лояльная">Лояльная</option>
+              <option value="">Не важно</option>
+              <option value="да">Нужны отношения (да)</option>
+              <option value="нет">Без отношений (нет)</option>
             </select>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1">ЕДВ от</label>
+              <input
+                type="number"
+                value={edvMin}
+                onChange={(e) => setEdvMin(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border text-sm"
+                style={{ borderColor: '#e5ddd2', background: '#fff' }}
+                placeholder="Мин"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1">ЕДВ до</label>
+              <input
+                type="number"
+                value={edvMax}
+                onChange={(e) => setEdvMax(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border text-sm"
+                style={{ borderColor: '#e5ddd2', background: '#fff' }}
+                placeholder="Макс"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -177,7 +201,6 @@ export default function DirectionPickerPage() {
                 {city.edv && <span className="px-2 py-1 rounded bg-[#fff7ed] text-[#c2410c]">ЕДВ: {city.edv}</span>}
                 {city.zp && <span className="px-2 py-1 rounded bg-[#f0f9ff] text-[#0369a1]">ЗП: {city.zp}</span>}
                 {city.age && <span className="px-2 py-1 rounded bg-[#f0f0f0]">Возраст: {city.age}</span>}
-                {city.vvk && <span className="px-2 py-1 rounded bg-[#f0f0f0]">ВВК: {city.vvk}</span>}
                 {city.diseases && <span className="px-2 py-1 rounded bg-[#fff7ed] text-[#c2410c]">Болезни: {city.diseases}</span>}
                 {city.foreign && <span className="px-2 py-1 rounded bg-[#f0f0f0]">{city.foreign}</span>}
                 {city.drivers && <span className="px-2 py-1 rounded bg-[#f0f0f0]">Водители: {city.drivers}</span>}

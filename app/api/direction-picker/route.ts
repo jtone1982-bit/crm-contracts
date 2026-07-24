@@ -15,7 +15,9 @@ export async function POST(request: Request) {
     disease,
     drivers,
     bpla,
-    vvk,
+    relations,
+    edvMin,
+    edvMax,
   } = body
 
   // Load raw selection data from training_modules content
@@ -86,10 +88,34 @@ export async function POST(request: Request) {
       }
     }
 
-    // VVK strictness
-    if (vvk && city.vvk) {
-      if (city.vvk.toLowerCase().includes(vvk.toLowerCase())) {
-        matches.push(`ВВК ${city.vvk}`)
+    // Relations
+    if (relations && city.relations) {
+      const cityRelations = city.relations.toLowerCase()
+      const userRelations = relations.toLowerCase()
+      if (userRelations === 'да') {
+        if (cityRelations.includes('выписывают') || cityRelations.includes('принимают') || cityRelations.includes('да')) {
+          matches.push('Отношения принимают/выписывают')
+        } else if (cityRelations.includes('нет') || cityRelations.includes('не')) {
+          mismatches.push('Отношения не работают')
+        }
+      } else if (userRelations === 'нет') {
+        if (cityRelations.includes('нет') || cityRelations.includes('не') || cityRelations === '') {
+          matches.push('Без отношений')
+        } else {
+          mismatches.push('Отношения есть — уточняй')
+        }
+      }
+    }
+
+    // EDV range
+    if (edvMin || edvMax) {
+      const cityEdv = parseInt(String(city.edv || '').replace(/\D/g, ''), 10)
+      const min = edvMin ? parseInt(edvMin, 10) : 0
+      const max = edvMax ? parseInt(edvMax, 10) : Infinity
+      if (cityEdv && cityEdv >= min && cityEdv <= max) {
+        matches.push(`ЕДВ ${city.edv} в диапазоне`)
+      } else if (cityEdv) {
+        mismatches.push(`ЕДВ ${city.edv} вне диапазона`)
       }
     }
 
