@@ -94,7 +94,12 @@ export default function TrainingPage() {
       const res = await fetch(`/api/training/modules/${mod.slug}`)
       const data = await res.json()
       if (data.questions) {
-        setQuestions(data.questions)
+        // Shuffle once more on client to avoid any predictable order
+        const shuffled = [...data.questions].sort(() => Math.random() - 0.5)
+        shuffled.forEach((q) => {
+          q.options = [...q.options].sort(() => Math.random() - 0.5)
+        })
+        setQuestions(shuffled)
         // Always start with theory view; do not auto-skip based on prior progress
         setTheoryViewed(false)
         setShowTest(false)

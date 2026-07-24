@@ -54,10 +54,19 @@ export async function GET(
     explanation: q.explanation,
   }))
 
-  return NextResponse.json({
-    module,
-    questions: prepared,
-    total: prepared.length,
-    theory_viewed: theoryViewed,
-  })
+  return NextResponse.json(
+    {
+      module,
+      questions: prepared,
+      total: prepared.length,
+      theory_viewed: theoryViewed,
+    },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    }
+  )
 }
