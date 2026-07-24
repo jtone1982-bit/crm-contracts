@@ -838,25 +838,53 @@ def extract_regulations_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
 
 
 def extract_sales_content(rows: List[List[str]]) -> List[Dict[str, Any]]:
+    """Extract sales training content with proper section/subsection/body structure."""
     content = []
     current_section = ''
+    current_subsection = ''
+
     for row in rows[3:]:
-        if len(row) < 3:
+        if not row:
             continue
-        section = normalize_text(row[0])
-        num = normalize_text(row[1])
-        text = normalize_text(row[2])
-        if section and section != current_section:
-            current_section = section
-            content.append({'type': 'section', 'title': section})
-        if not text or len(text) < 10:
+
+        col0 = normalize_text(row[0]) if len(row) > 0 else ''
+        col1 = normalize_text(row[1]) if len(row) > 1 else ''
+        col2 = normalize_text(row[2]) if len(row) > 2 else ''
+
+        # Skip rows that have nothing usable
+        if not col0 and not col1 and not col2:
             continue
+
+        # New section header (e.g. "1. СТРУКТУРА ЗВОНКА" or "1.1 Приветствие...")
+        if col0:
+            current_section = col0
+            current_subsection = ''
+            content.append({'type': 'section', 'title': col0})
+            continue
+
+        # col0 is empty; content is in col1 and maybe col2
+        if not col1:
+            continue
+
+        # Case: col1 is a short label like "Принципы:", "Если просит перезвонить:"
+        # and col2 is the body text
+        if col2 and len(col1) <= 45:
+            content.append({
+                'type': 'tip',
+                'title': col1,
+                'description': col2,
+            })
+            continue
+
+        # Case: col1 is the body (long replica, e.g. «Доброе утро...»)
+        # Use current section/subsection as context title if available
+        title = current_subsection or current_section or ''
         content.append({
             'type': 'tip',
-            'num': num,
-            'title': current_section,
-            'description': text,
+            'title': title,
+            'description': col1,
         })
+
     return content
 
 
