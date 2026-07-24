@@ -95,10 +95,9 @@ export default function TrainingPage() {
       const data = await res.json()
       if (data.questions) {
         setQuestions(data.questions)
-        setTheoryViewed(data.theory_viewed || false)
-        if (data.theory_viewed || mod.is_final) {
-          setShowTest(true)
-        }
+        // Always start with theory view; do not auto-skip based on prior progress
+        setTheoryViewed(false)
+        setShowTest(false)
       } else {
         setError(data.error || 'Вопросы не загрузились')
       }
@@ -347,7 +346,7 @@ export default function TrainingPage() {
               <div className="mt-6 flex gap-3">
                 {!result.passed && (
                   <button
-                    onClick={() => { setResult(null); setAnswers({}); setError(null) }}
+                    onClick={() => { setResult(null); setAnswers({}); setError(null); setShowTest(false); setTheoryViewed(false) }}
                     className="px-5 py-2.5 rounded-xl text-sm font-medium text-white"
                     style={{ background: '#c2410c' }}
                   >
