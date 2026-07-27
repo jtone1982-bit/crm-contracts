@@ -32,6 +32,8 @@ export default function UsersList({ users, managers, searchQuery }: UsersListPro
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
+  const [confirmUserId, setConfirmUserId] = useState<string | null>(null)
+
   const handleDelete = async (userId: string) => {
     const user = users.find((u) => u.id === userId)
     if (!user) return
@@ -43,16 +45,21 @@ export default function UsersList({ users, managers, searchQuery }: UsersListPro
       return
     }
 
-    if (!confirm(`Удалить ${user.full_name || user.email}?${user.candidates_count > 0 ? ` Его ${user.candidates_count} кандидатов перейдут к выбранному менеджеру.` : ''}`)) {
-      return
-    }
+    setConfirmUserId(userId)
+  }
 
+  const confirmDelete = async () => {
+    if (!confirmUserId) return
+    const user = users.find((u) => u.id === confirmUserId)
+    if (!user) return
+
+    setConfirmUserId(null)
     setLoading(true)
     setMessage(null)
 
     try {
       const body = JSON.stringify({
-        userId,
+        userId: user.id,
         transferToManagerId: user.candidates_count > 0 ? transferManagerId : undefined,
       })
       console.log('DELETE BODY', body)
@@ -181,7 +188,7 @@ export default function UsersList({ users, managers, searchQuery }: UsersListPro
                             disabled={loading || (u.candidates_count > 0 && !transferManagerId)}
                             className="text-xs px-3 py-1.5 rounded bg-red-600 text-white disabled:opacity-50"
                           >
-                            {loading ? 'Удаление...' : 'Подтвердить удаление'}
+                            Подтвердить удаление
                           </button>
                           <button
                             onClick={() => { setDeletingId(null); setTransferManagerId(''); setMessage(null) }}
@@ -207,6 +214,42 @@ export default function UsersList({ users, managers, searchQuery }: UsersListPro
           </tbody>
         </table>
       </div>
+      {confirmUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <p className="text-lg font-bold mb-2" style={{ color: '#2d2520' }}>Подтвердите удаление</p>
+            {(() => {
+              const u = users.find((x) => x.id === confirmUserId)
+              if (!u) return null
+              return (
+                <p className="text-sm mb-4" style={{ color: '#5c4d3d' }}>
+                  Удалить {u.full_name || u.email}?
+                  {u.candidates_count > 0 && (
+                    <><br />Его {u.candidates_count} кандидатов перейдут к выбранному менеджеру.</>
+                  )}
+                </p>
+              )
+            })()}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmUserId(null)}
+                className="text-sm px-4 py-2 rounded-lg border"
+                style={{ borderColor: 'rgba(60,50,40,0.12)' }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={loading}
+                className="text-sm px-4 py-2 rounded-lg bg-red-600 text-white disabled:opacity-50"
+              >
+                {loading ? 'Удаление...' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
