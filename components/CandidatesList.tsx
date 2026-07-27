@@ -54,9 +54,15 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
     }
   }
 
+  const getManagerName = (c: Candidate): string => {
+    if (!c.manager) return '—'
+    if (Array.isArray(c.manager)) return c.manager[0]?.full_name || '—'
+    return c.manager.full_name || '—'
+  }
+
   const sortedCandidates = [...(candidates || [])].sort((a, b) => {
-    let aVal: string = ''
-    let bVal: string = ''
+    let aVal = ''
+    let bVal = ''
     switch (sortField) {
       case 'phone': aVal = a.phone || ''; bVal = b.phone || ''; break
       case 'full_name': aVal = a.full_name || ''; bVal = b.full_name || ''; break
@@ -66,15 +72,10 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
       case 'manager': aVal = getManagerName(a); bVal = getManagerName(b); break
       case 'next_contact_date': aVal = a.next_contact_date || ''; bVal = b.next_contact_date || ''; break
     }
+    if (aVal === bVal) return 0
     const cmp = aVal.localeCompare(bVal, 'ru')
     return sortDir === 'asc' ? cmp : -cmp
   })
-
-  const getManagerName = (c: Candidate): string => {
-    if (!c.manager) return '—'
-    if (Array.isArray(c.manager)) return c.manager[0]?.full_name || '—'
-    return c.manager.full_name || '—'
-  }
 
   const allIds = sortedCandidates.map((c) => c.id)
   const isAllSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id))
