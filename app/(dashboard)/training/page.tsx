@@ -109,7 +109,12 @@ export default function TrainingPage() {
           q.options = [...q.options].sort(() => Math.random() - 0.5)
         })
         setQuestions(shuffled)
-        // Always start with theory view; do not auto-skip based on prior progress
+        // Initialize answers with proper types
+        const initialAnswers: Record<string, string | string[]> = {}
+        shuffled.forEach((q) => {
+          initialAnswers[q.id] = q.question_type === 'multiple_choice' ? [] : ''
+        })
+        setAnswers(initialAnswers)
         setTheoryViewed(false)
         setShowTest(false)
       } else {
@@ -444,25 +449,26 @@ export default function TrainingPage() {
                                 }}
                               >
                                 <input
-                                  type={isMulti ? 'checkbox' : 'radio'}
-                                  name={q.id}
-                                  value={opt}
-                                  checked={checked}
-                                  onChange={() => {
-                                    if (isMulti) {
-                                      setAnswers((prev) => {
-                                        const current = (prev[q.id] as string[]) || []
-                                        if (current.includes(opt)) {
-                                          return { ...prev, [q.id]: current.filter((o) => o !== opt) }
-                                        }
-                                        return { ...prev, [q.id]: [...current, opt] }
-                                      })
-                                    } else {
-                                      setAnswers((prev) => ({ ...prev, [q.id]: opt }))
-                                    }
-                                  }}
-                                  className="accent-[#c2410c]"
-                                />
+                            type={isMulti ? 'checkbox' : 'radio'}
+                            name={q.id}
+                            value={opt}
+                            checked={checked}
+                            onChange={(e) => {
+                              if (isMulti) {
+                                const isChecked = e.target.checked
+                                setAnswers((prev) => {
+                                  const current = (prev[q.id] as string[]) || []
+                                  if (isChecked) {
+                                    return { ...prev, [q.id]: [...current, opt] }
+                                  }
+                                  return { ...prev, [q.id]: current.filter((o) => o !== opt) }
+                                })
+                              } else {
+                                setAnswers((prev) => ({ ...prev, [q.id]: opt }))
+                              }
+                            }}
+                            className="accent-[#c2410c]"
+                          />
                                 <span className="text-sm" style={{ color: '#2d2520' }}>{opt}</span>
                               </label>
                             )
