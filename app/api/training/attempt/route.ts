@@ -125,5 +125,9 @@ export async function POST(request: Request) {
     passing_score: module.passing_score,
     is_final: module.is_final,
     answers: checkedAnswers,
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
   })
 }

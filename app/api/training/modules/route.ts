@@ -31,5 +31,9 @@ export async function GET() {
     progress: progressMap.get(m.id) || null,
   }))
 
-  return NextResponse.json({ modules: result })
+  return NextResponse.json({ modules: result }, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
+  })
 }
