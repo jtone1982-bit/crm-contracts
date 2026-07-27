@@ -18,6 +18,13 @@ interface Candidate {
   whatsapp_number?: string | null
   max_contact?: string | null
   manager?: { full_name: string | null } | { full_name: string | null }[] | null
+  manager_id?: string | null
+}
+
+interface Manager {
+  id: string
+  full_name: string | null
+  role: string
 }
 
 interface CandidatesListProps {
@@ -26,10 +33,15 @@ interface CandidatesListProps {
   isAdmin?: boolean
   leadSources?: string[]
   activeSource?: string
+  managers?: Manager[]
 }
 
-export default function CandidatesList({ candidates, statusFilter, isAdmin, leadSources, activeSource }: CandidatesListProps) {
+export default function CandidatesList({ candidates, statusFilter, isAdmin, leadSources, activeSource, managers }: CandidatesListProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [transferManagerId, setTransferManagerId] = useState<string>('')
+  const [transferLoading, setTransferLoading] = useState(false)
+  const [transferMessage, setTransferMessage] = useState<string | null>(null)
   const [sortField, setSortField] = useState<'phone' | 'full_name' | 'city_from' | 'city_to' | 'lead_source' | 'manager' | 'next_contact_date'>('next_contact_date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
@@ -64,6 +76,53 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
     return c.manager.full_name || '—'
   }
 
+  const allIds = sortedCandidates.map((c) => c.id)
+  const isAllSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id))
+
+  const toggleSelection = (id: string) => {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+  }
+
+  const toggleAll = () => {
+    if (isAllSelected) {
+      const next = new Set(selectedIds)
+      allIds.forEach((id) => next.delete(id))
+      setSelectedIds(next)
+    } else {
+      const next = new Set(selectedIds)
+      allIds.forEach((id) => next.add(id))
+      setSelectedIds(next)
+    }
+  }
+
+  const handleTransfer = async () => {
+    if (!transferManagerId || selectedIds.size === 0) return
+    setTransferLoading(true)
+    setTransferMessage(null)
+    try {
+      const res = await fetch('/api/candidates/reassign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateIds: Array.from(selectedIds), managerId: transferManagerId }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setTransferMessage(`Перенесено ${json.updated} кандидатов`)
+        setSelectedIds(new Set())
+        setTimeout(() => window.location.reload(), 600)
+      } else {
+        setTransferMessage(json.error || 'Ошибка переноса')
+      }
+    } catch (e) {
+      setTransferMessage('Ошибка сети')
+    } finally {
+      setTransferLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <CandidateModal candidateId={selectedId} onClose={() => setSelectedId(null)} statuses={PIPELINE_STATUSES.slice()} />
@@ -71,6 +130,33 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#2d2520' }}>{statusFilter ? statusFilter : 'Все кандидаты'}</h1>
         <a href="/" className="hover:underline" style={{ color: '#c2410c' }}>← Назад</a>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 bg-[#fefdfb] border rounded-xl p-3" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+        <span className="text-sm font-medium" style={{ color: '#2d2520' }}>Выбрано: {selectedIds.size}</span>
+        <select
+          className="text-sm border rounded-lg px-2 py-1"
+          style={{ borderColor: 'rgba(60,50,40,0.12)' }}
+          value={transferManagerId}
+          onChange={(e) => setTransferManagerId(e.target.value)}
+          disabled={!managers || managers.length === 0}
+        >
+          <option value="">Выберите менеджера</option>
+          {(managers || []).map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.full_name || '—'} {m.role === 'admin' ? '(админ)' : ''}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={handleTransfer}
+          disabled={transferLoading || selectedIds.size === 0 || !transferManagerId}
+          className="text-sm px-4 py-1.5 rounded-lg text-white disabled:opacity-50"
+          style={{ background: '#c2410c' }}
+        >
+          {transferLoading ? 'Перенос...' : 'Перенести'}
+        </button>
+        {transferMessage && <span className="text-sm" style={{ color: transferMessage.includes('Ошибка') ? '#dc2626' : '#16a34a' }}>{transferMessage}</span>}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -118,6 +204,14 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
         <table className="w-full min-w-[600px]">
           <thead className="text-left text-sm" style={{ background: 'rgba(240,235,227,0.6)' }}>
             <tr>
+              <th className="p-3">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={toggleAll}
+                  aria-label="Выбрать всех"
+                />
+              </th>
               <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('phone')}>Телефон {sortField === 'phone' && (sortDir === 'asc' ? '↑' : '↓')}</th>
               <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('full_name')}>ФИО {sortField === 'full_name' && (sortDir === 'asc' ? '↑' : '↓')}</th>
               <th className="p-3 cursor-pointer select-none hover:bg-black/5" onClick={() => handleSort('city_from')}>Откуда {sortField === 'city_from' && (sortDir === 'asc' ? '↑' : '↓')}</th>
@@ -130,6 +224,14 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
           <tbody className="text-sm">
             {sortedCandidates.map((c) => (
               <tr key={c.id} className="border-t hover:bg-gray-50">
+                <td className="p-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(c.id)}
+                    onChange={() => toggleSelection(c.id)}
+                    aria-label={`Выбрать ${c.full_name || c.phone}`}
+                  />
+                </td>
                 <td className="p-3">
                   <div className="flex items-center gap-2">
                     <button

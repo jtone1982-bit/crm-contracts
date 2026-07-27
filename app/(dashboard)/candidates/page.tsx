@@ -7,7 +7,8 @@ export default async function CandidatesPage({
 }: {
   searchParams: Promise<{ status?: string; department_id?: string; manager_id?: string; source?: string }>
 }) {
-  const { status, department_id, manager_id } = await searchParams
+  const params = await searchParams
+  const { status, department_id, manager_id, source } = params
 
   const { supabase, user, profile } = await requireManagerOrAdmin()
 
@@ -25,14 +26,13 @@ export default async function CandidatesPage({
     query = query.eq('status', status)
   }
 
-  // Admin filter by lead_source
-  const { source } = await searchParams as { source?: string }
   if (isAdmin && source) {
     query = query.eq('lead_source', source)
   }
 
-  // Admin: get unique lead sources for filter dropdown
   let leadSources: string[] = []
+  let managers: { id: string; full_name: string | null; role: string }[] = []
+
   if (isAdmin) {
     const { data: sources } = await getSupabaseAdmin()
       .from('candidates')
@@ -40,9 +40,25 @@ export default async function CandidatesPage({
       .not('lead_source', 'is', null)
       .neq('lead_source', '')
     leadSources = [...new Set((sources?.map(s => s.lead_source).filter(Boolean) as string[]))].sort()
+
+    const { data: mgrs } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('role', ['manager', 'admin'])
+      .order('full_name', { ascending: true })
+    managers = mgrs || []
   }
 
   const { data: candidates } = await query.order('created_at', { ascending: false })
 
-  return <CandidatesList candidates={candidates || []} statusFilter={status} isAdmin={isAdmin} leadSources={leadSources} activeSource={source} />
+  return (
+    <CandidatesList
+      candidates={candidates || []}
+      statusFilter={status}
+      isAdmin={isAdmin}
+      leadSources={leadSources}
+      activeSource={source}
+      managers={managers}
+    />
+  )
 }

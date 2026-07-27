@@ -136,8 +136,8 @@ export default async function LoginPage({
 
             <div className="fallback">
               Если сайт не загружается — попробуйте{' '}
-              <a href="https://ru.tone-crm.ru" target="_blank" rel="noreferrer">
-                ru.tone-crm.ru
+              <a href="https://ru.tone-crm.ru:8443" target="_blank" rel="noreferrer">
+                ru.tone-crm.ru:8443
               </a>
             </div>
 
