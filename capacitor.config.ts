@@ -5,9 +5,9 @@ const config: CapacitorConfig = {
   appName: 'CRM Контракты',
   webDir: 'out',
   server: {
-    url: 'https://tone-crm.ru',
+    url: 'https://ru.tone-crm.ru:8443',
     cleartext: false,
-    allowNavigation: ['tone-crm.ru', '*.tone-crm.ru'],
+    allowNavigation: ['tone-crm.ru', '*.tone-crm.ru', 'ru.tone-crm.ru:8443'],
   },
   android: {
     allowMixedContent: true,
