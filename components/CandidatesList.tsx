@@ -34,9 +34,10 @@ interface CandidatesListProps {
   leadSources?: string[]
   activeSource?: string
   managers?: Manager[]
+  activeManagerId?: string
 }
 
-export default function CandidatesList({ candidates, statusFilter, isAdmin, leadSources, activeSource, managers }: CandidatesListProps) {
+export default function CandidatesList({ candidates, statusFilter, isAdmin, leadSources, activeSource, managers, activeManagerId }: CandidatesListProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [transferManagerId, setTransferManagerId] = useState<string>('')
@@ -244,11 +245,39 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
         ))}
       </div>
 
+      {isAdmin && managers && managers.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-gray-500">Менеджер:</span>
+          <Link
+            href={`/candidates${statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : ''}${activeSource ? (statusFilter ? `&source=${encodeURIComponent(activeSource)}` : `?source=${encodeURIComponent(activeSource)}`) : ''}`}
+            className={`px-3 py-1 text-sm border rounded-full hover:bg-gray-50 ${!activeManagerId ? 'bg-blue-100 border-blue-300' : ''}`}
+          >
+            Все
+          </Link>
+          {managers.map((m) => {
+            const params = new URLSearchParams()
+            if (statusFilter) params.set('status', statusFilter)
+            if (activeSource) params.set('source', activeSource)
+            if (m.id !== activeManagerId) params.set('manager_id', m.id)
+            const href = `/candidates${params.toString() ? `?${params.toString()}` : ''}`
+            return (
+              <Link
+                key={m.id}
+                href={href}
+                className={`px-3 py-1 text-sm border rounded-full hover:bg-gray-50 ${activeManagerId === m.id ? 'bg-blue-100 border-blue-300' : ''}`}
+              >
+                {m.full_name || '—'}
+              </Link>
+            )
+          })}
+        </div>
+      )}
+
       {isAdmin && leadSources && leadSources.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-gray-500">Источник:</span>
           <Link
-            href={`/candidates${statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : ''}`}
+            href={`/candidates${statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : ''}${activeManagerId ? (statusFilter ? `&manager_id=${activeManagerId}` : `?manager_id=${activeManagerId}`) : ''}`}
             className={`px-3 py-1 text-sm border rounded-full hover:bg-gray-50 ${!activeSource ? 'bg-blue-100 border-blue-300' : ''}`}
           >
             Все
@@ -256,6 +285,7 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
           {leadSources.map((src) => {
             const params = new URLSearchParams()
             if (statusFilter) params.set('status', statusFilter)
+            if (activeManagerId) params.set('manager_id', activeManagerId)
             if (src !== activeSource) params.set('source', src)
             const href = `/candidates${params.toString() ? `?${params.toString()}` : ''}`
             return (

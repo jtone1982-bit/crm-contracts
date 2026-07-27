@@ -30,6 +30,10 @@ export default async function CandidatesPage({
     query = query.eq('lead_source', source)
   }
 
+  if (isAdmin && manager_id) {
+    query = query.eq('manager_id', manager_id)
+  }
+
   let leadSources: string[] = []
   let managers: { id: string; full_name: string | null; role: string }[] = []
 
@@ -59,6 +63,7 @@ export default async function CandidatesPage({
       leadSources={leadSources}
       activeSource={source}
       managers={managers}
+      activeManagerId={manager_id}
     />
   )
 }
