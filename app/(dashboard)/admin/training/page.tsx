@@ -1,18 +1,20 @@
 import { requireAdmin } from '@/lib/guards'
 import { revalidatePath } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function AdminTrainingPage() {
   const { supabase } = await requireAdmin()
+  const adminClient = createAdminClient()
 
   async function resetProgress(formData: FormData) {
     'use server'
     const userId = formData.get('userId') as string
     const moduleId = formData.get('moduleId') as string
 
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('training_progress')
       .delete()
       .eq('user_id', userId)
@@ -26,17 +28,17 @@ export default async function AdminTrainingPage() {
     revalidatePath('/admin/training')
   }
 
-  const { data: modules } = await supabase
+  const { data: modules } = await adminClient
     .from('training_modules')
     .select('id, slug, title, passing_score, is_final, order_index')
     .eq('active', true)
     .order('order_index', { ascending: true })
 
-  const { data: progress } = await supabase
+  const { data: progress } = await adminClient
     .from('training_progress')
     .select('user_id, module_id, status, best_score, attempts_count, completed_at')
 
-  const { data: profiles } = await supabase
+  const { data: profiles } = await adminClient
     .from('profiles')
     .select('id, email, full_name, role, approved, active')
     .neq('role', 'admin')
