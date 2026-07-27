@@ -70,8 +70,14 @@
   <script>
     const PRIMARY = 'https://tone-crm.ru';
     const FALLBACK = 'https://ru.tone-crm.ru';
-    const CHECK_URL = PRIMARY + '/api/heartbeat';
+    const CHECK_URLS = [
+      PRIMARY + '/api/heartbeat',
+      PRIMARY + '/login',
+    ];
     const TIMEOUT_MS = 5000;
+    const MAX_RETRIES = 2;
+
+    let retries = 0;
 
     function setStatus(text) {
       document.getElementById('status').textContent = text;
@@ -91,28 +97,55 @@
       window.location.href = FALLBACK + '/';
     }
 
-    function tryMain() {
-      document.getElementById('actions').style.display = 'none';
-      setStatus('Проверяем доступность основного сервера...');
+    function checkUrl(url) {
+      return new Promise((resolve, reject) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        const img = new Image();
+        let done = false;
 
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        function finish(result) {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          controller.abort();
+          resolve(result);
+        }
 
-      fetch(CHECK_URL, { 
-        method: 'GET',
-        signal: controller.signal,
-        cache: 'no-store',
-        mode: 'no-cors'
-      })
-      .then(() => {
-        clearTimeout(timer);
-        goPrimary();
-      })
-      .catch((err) => {
-        clearTimeout(timer);
-        setStatus('Основной сервер недоступен. Возможны проблемы у провайдера или на стороне Cloudflare. Попробуйте российское зеркало.');
-        showActions();
+        // Use fetch with no-cors to detect network reachability
+        fetch(url, {
+          method: 'GET',
+          signal: controller.signal,
+          cache: 'no-store',
+          mode: 'no-cors',
+        }).then(() => finish(true)).catch(() => finish(false));
       });
+    }
+
+    async function tryMain() {
+      document.getElementById('actions').style.display = 'none';
+      retries += 1;
+      setStatus('Проверяем доступность основного сервера... (попытка ' + retries + ')');
+
+      let reachable = false;
+      for (const url of CHECK_URLS) {
+        reachable = await checkUrl(url);
+        if (reachable) break;
+      }
+
+      if (reachable) {
+        goPrimary();
+        return;
+      }
+
+      if (retries < MAX_RETRIES) {
+        setStatus('Основной сервер не отвечает, повторная попытка...');
+        setTimeout(tryMain, 1500);
+        return;
+      }
+
+      setStatus('Основный сервер недоступен. Возможны проблемы у провайдера или на стороне Cloudflare. Переключаем на российское зеркало...');
+      setTimeout(goRu, 1000);
     }
 
     // Start check on load

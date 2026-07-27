@@ -107,7 +107,21 @@ export default async function LoginPage({
             cursor: pointer;
           }
           .toggle:hover { text-decoration: underline; }
-          .hidden { display: none; }
+          .fallback {
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            color: #9a3412;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            text-align: center;
+          }
+          .fallback a {
+            color: #c2410c;
+            font-weight: 600;
+            text-decoration: underline;
+          }
         `}</style>
       </head>
       <body>
@@ -119,6 +133,13 @@ export default async function LoginPage({
           <div className="card">
             <h1>CRM Контракты</h1>
             <p className="subtitle">{isSignUp ? 'Регистрация нового менеджера' : 'Вход в систему'}</p>
+
+            <div className="fallback">
+              Если сайт не загружается — попробуйте{' '}
+              <a href="https://ru.tone-crm.ru" target="_blank" rel="noreferrer">
+                ru.tone-crm.ru
+              </a>
+            </div>
 
             {error && <div className="error">{error}</div>}
 
