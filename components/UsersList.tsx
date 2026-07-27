@@ -36,6 +36,8 @@ export default function UsersList({ users, managers, searchQuery }: UsersListPro
     const user = users.find((u) => u.id === userId)
     if (!user) return
 
+    console.log('DELETE CLICKED', userId, 'candidates:', user.candidates_count, 'transferManagerId:', transferManagerId)
+
     if (user.candidates_count > 0 && !transferManagerId) {
       setMessage('Выберите менеджера для переноса кандидатов')
       return
@@ -49,15 +51,19 @@ export default function UsersList({ users, managers, searchQuery }: UsersListPro
     setMessage(null)
 
     try {
+      const body = JSON.stringify({
+        userId,
+        transferToManagerId: user.candidates_count > 0 ? transferManagerId : undefined,
+      })
+      console.log('DELETE BODY', body)
       const res = await fetch('/api/users/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          transferToManagerId: user.candidates_count > 0 ? transferManagerId : undefined,
-        }),
+        body,
       })
+      console.log('DELETE RESPONSE STATUS', res.status)
       const json = await res.json()
+      console.log('DELETE RESPONSE JSON', json)
       if (res.ok) {
         setMessage(`Удалено. Перенесено кандидатов: ${json.transferred || 0}`)
         setDeletingId(null)
@@ -67,6 +73,7 @@ export default function UsersList({ users, managers, searchQuery }: UsersListPro
         setMessage(json.error || 'Ошибка удаления')
       }
     } catch (e) {
+      console.error('DELETE NETWORK ERROR', e)
       setMessage('Ошибка сети')
     } finally {
       setLoading(false)
