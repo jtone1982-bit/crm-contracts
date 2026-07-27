@@ -87,7 +87,6 @@ export default async function AdminTrainingPage({
             defaultValue={selectedUserId || ''}
             className="text-sm border rounded-lg px-3 py-2"
             style={{ borderColor: 'rgba(60,50,40,0.12)' }}
-            onChange={(e) => e.currentTarget.form?.submit()}
           >
             <option value="">Все пользователи</option>
             {(allProfiles || []).map((p) => (
