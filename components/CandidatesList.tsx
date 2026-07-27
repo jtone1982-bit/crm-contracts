@@ -42,6 +42,8 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
   const [transferManagerId, setTransferManagerId] = useState<string>('')
   const [transferLoading, setTransferLoading] = useState(false)
   const [transferMessage, setTransferMessage] = useState<string | null>(null)
+  const [bulkFromManagerId, setBulkFromManagerId] = useState<string>('')
+  const [bulkToManagerId, setBulkToManagerId] = useState<string>('')
   const [sortField, setSortField] = useState<'phone' | 'full_name' | 'city_from' | 'city_to' | 'lead_source' | 'manager' | 'next_contact_date'>('next_contact_date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
@@ -124,6 +126,32 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
     }
   }
 
+  const handleBulkTransfer = async () => {
+    if (!bulkFromManagerId || !bulkToManagerId || bulkFromManagerId === bulkToManagerId) return
+    setTransferLoading(true)
+    setTransferMessage(null)
+    try {
+      const res = await fetch('/api/candidates/reassign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromManagerId: bulkFromManagerId, managerId: bulkToManagerId }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setTransferMessage(`Перенесено ${json.updated} кандидатов`)
+        setBulkFromManagerId('')
+        setBulkToManagerId('')
+        setTimeout(() => window.location.reload(), 600)
+      } else {
+        setTransferMessage(json.error || 'Ошибка переноса')
+      }
+    } catch (e) {
+      setTransferMessage('Ошибка сети')
+    } finally {
+      setTransferLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <CandidateModal candidateId={selectedId} onClose={() => setSelectedId(null)} statuses={PIPELINE_STATUSES.slice()} />
@@ -155,10 +183,52 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
           className="text-sm px-4 py-1.5 rounded-lg text-white disabled:opacity-50"
           style={{ background: '#c2410c' }}
         >
-          {transferLoading ? 'Перенос...' : 'Перенести'}
+          {transferLoading ? 'Перенос...' : 'Перенести выбранных'}
         </button>
-        {transferMessage && <span className="text-sm" style={{ color: transferMessage.includes('Ошибка') ? '#dc2626' : '#16a34a' }}>{transferMessage}</span>}
       </div>
+
+      {(isAdmin || (managers?.length || 0) > 1) && (
+        <div className="flex flex-wrap items-center gap-3 bg-[#fefdfb] border rounded-xl p-3" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+          <span className="text-sm font-medium" style={{ color: '#2d2520' }}>Перенести всех от менеджера:</span>
+          <select
+            className="text-sm border rounded-lg px-2 py-1"
+            style={{ borderColor: 'rgba(60,50,40,0.12)' }}
+            value={bulkFromManagerId}
+            onChange={(e) => setBulkFromManagerId(e.target.value)}
+          >
+            <option value="">От кого</option>
+            {(managers || []).map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.full_name || '—'} {m.role === 'admin' ? '(админ)' : ''}
+              </option>
+            ))}
+          </select>
+          <span className="text-sm" style={{ color: '#6b5d50' }}>→</span>
+          <select
+            className="text-sm border rounded-lg px-2 py-1"
+            style={{ borderColor: 'rgba(60,50,40,0.12)' }}
+            value={bulkToManagerId}
+            onChange={(e) => setBulkToManagerId(e.target.value)}
+          >
+            <option value="">Кому</option>
+            {(managers || []).map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.full_name || '—'} {m.role === 'admin' ? '(админ)' : ''}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleBulkTransfer}
+            disabled={transferLoading || !bulkFromManagerId || !bulkToManagerId || bulkFromManagerId === bulkToManagerId}
+            className="text-sm px-4 py-1.5 rounded-lg text-white disabled:opacity-50"
+            style={{ background: '#c2410c' }}
+          >
+            {transferLoading ? 'Перенос...' : 'Перенести всех'}
+          </button>
+        </div>
+      )}
+
+      {transferMessage && <span className="text-sm" style={{ color: transferMessage.includes('Ошибка') ? '#dc2626' : '#16a34a' }}>{transferMessage}</span>}
 
       <div className="flex flex-wrap gap-2">
         <Link href="/candidates" className="px-3 py-1 text-sm border rounded-full hover:shadow-sm transition no-underline" style={{ borderColor: 'rgba(60,50,40,0.12)', color: '#6b5d50', background: '#fefdfb' }}>Все</Link>

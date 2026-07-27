@@ -12,11 +12,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { candidateIds, managerId } = body
+  const { candidateIds, managerId, fromManagerId } = body
 
-  if (!Array.isArray(candidateIds) || candidateIds.length === 0) {
-    return NextResponse.json({ error: 'Не выбраны кандидаты' }, { status: 400 })
-  }
   if (!managerId) {
     return NextResponse.json({ error: 'Не выбран менеджер' }, { status: 400 })
   }
@@ -33,15 +30,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Менеджер не найден' }, { status: 404 })
   }
 
-  // Non-admin can only transfer to themselves
-  if (!isAdmin && managerId !== user.id) {
-    return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 })
+  let query = supabase.from('candidates').update({ manager_id: managerId })
+
+  if (Array.isArray(candidateIds) && candidateIds.length > 0) {
+    query = query.in('id', candidateIds)
+  } else if (fromManagerId) {
+    // Bulk transfer from one manager to another
+    query = query.eq('manager_id', fromManagerId)
+  } else {
+    return NextResponse.json({ error: 'Не выбраны кандидаты или менеджер-источник' }, { status: 400 })
   }
 
-  // Build filter to only update candidates the current user can manage
-  let query = supabase.from('candidates').update({ manager_id: managerId }).in('id', candidateIds)
+  // Non-admin can only transfer their own candidates to themselves
   if (!isAdmin) {
     query = query.eq('manager_id', user.id)
+    if (managerId !== user.id) {
+      return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 })
+    }
   }
 
   const { data, error } = await query.select('id')
