@@ -13,6 +13,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          check-latest: true
           cache: 'npm'
 
       - name: Install dependencies
@@ -23,11 +24,15 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
 
-      - name: Build Tauri app
+      - name: Install WebView2 Runtime
         run: |
-          npm run tauri build -- --target x86_64-pc-windows-msvc --verbose
+          Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile 'MicrosoftEdgeWebview2Setup.exe'
+          .\MicrosoftEdgeWebview2Setup.exe /silent /install
+
+      - name: Build Tauri app
+        run: npm run tauri build -- --target x86_64-pc-windows-msvc --verbose
         env:
-          CI: false
+          CI: true
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
