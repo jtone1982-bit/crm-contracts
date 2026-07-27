@@ -5,7 +5,15 @@ import { createAdminClient } from '@/lib/supabase-server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export default async function AdminTrainingPage() {
+export default async function AdminTrainingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ userId?: string; q?: string }>
+}) {
+  const params = await searchParams
+  const selectedUserId = params.userId
+  const searchQuery = params.q || ''
+
   const { supabase } = await requireAdmin()
   const adminClient = createAdminClient()
 
@@ -38,11 +46,28 @@ export default async function AdminTrainingPage() {
     .from('training_progress')
     .select('user_id, module_id, status, best_score, attempts_count, completed_at')
 
-  const { data: profiles } = await adminClient
+  let profilesQuery = adminClient
     .from('profiles')
     .select('id, email, full_name, role, approved, active')
     .neq('role', 'admin')
     .order('created_at', { ascending: false })
+
+  if (selectedUserId) {
+    profilesQuery = profilesQuery.eq('id', selectedUserId)
+  }
+
+  if (searchQuery) {
+    profilesQuery = profilesQuery.or(`full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+  }
+
+  const { data: profiles } = await profilesQuery
+
+  // Get all non-admin profiles for dropdown (without filters)
+  const { data: allProfiles } = await adminClient
+    .from('profiles')
+    .select('id, email, full_name')
+    .neq('role', 'admin')
+    .order('full_name', { ascending: true, nullsFirst: false })
 
   const modulesMap = new Map(modules?.map((m) => [m.id, m]) || [])
   const progressMap = new Map<string, any>()
@@ -54,6 +79,49 @@ export default async function AdminTrainingPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold" style={{ color: '#2d2520' }}>Результаты обучения</h1>
+
+      <div className="flex flex-wrap items-center gap-3 bg-white border rounded-lg p-3">
+        <form method="get" action="/admin/training" className="flex flex-wrap items-center gap-3">
+          <select
+            name="userId"
+            defaultValue={selectedUserId || ''}
+            className="text-sm border rounded-lg px-3 py-2"
+            style={{ borderColor: 'rgba(60,50,40,0.12)' }}
+            onChange={(e) => e.currentTarget.form?.submit()}
+          >
+            <option value="">Все пользователи</option>
+            {(allProfiles || []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.full_name || p.email || '—'}
+              </option>
+            ))}
+          </select>
+          <input
+            type="text"
+            name="q"
+            defaultValue={searchQuery}
+            placeholder="Поиск по имени или email"
+            className="text-sm border rounded-lg px-3 py-2"
+            style={{ borderColor: 'rgba(60,50,40,0.12)', minWidth: '220px' }}
+          />
+          <button
+            type="submit"
+            className="text-sm px-4 py-2 rounded-lg text-white"
+            style={{ background: '#c2410c' }}
+          >
+            Найти
+          </button>
+          {(selectedUserId || searchQuery) && (
+            <a
+              href="/admin/training"
+              className="text-sm px-4 py-2 rounded-lg border"
+              style={{ borderColor: 'rgba(60,50,40,0.12)', color: '#2d2520' }}
+            >
+              Сбросить
+            </a>
+          )}
+        </form>
+      </div>
 
       {!profiles || profiles.length === 0 ? (
         <div className="p-8 text-center text-gray-500 rounded-xl bg-white border">Нет пользователей для отслеживания</div>
