@@ -62,20 +62,19 @@
     <h1>CRM Контракты</h1>
     <p id="status">Проверяем доступность сервера...</p>
     <div id="actions" style="display:none;">
-      <button onclick="tryMain()">Повторить основной сервер</button>
-      <button class="secondary" onclick="goRu()">Российское зеркало</button>
+      <button onclick="tryMainManual()">Повторить</button>
+      <button class="secondary" onclick="goFallback()">Резервный сервер</button>
     </div>
   </div>
 
   <script>
-    const PRIMARY = 'https://tone-crm.ru';
-    const FALLBACK = 'https://ru.tone-crm.ru';
+    const PRIMARY = 'https://ru.tone-crm.ru:8443';
+    const FALLBACK = 'https://tone-crm.ru';
     const CHECK_URLS = [
-      PRIMARY + '/api/heartbeat',
       PRIMARY + '/login',
     ];
-    const TIMEOUT_MS = 5000;
-    const MAX_RETRIES = 2;
+    const TIMEOUT_MS = 3000;
+    const MAX_RETRIES = 1;
 
     let retries = 0;
 
@@ -88,44 +87,45 @@
     }
 
     function goPrimary() {
-      setStatus('Открываем основной сервер...');
+      setStatus('Открываем CRM...');
       window.location.href = PRIMARY + '/';
     }
 
-    function goRu() {
-      setStatus('Открываем российское зеркало...');
+    function goFallback() {
+      setStatus('Открываем резервный сервер...');
       window.location.href = FALLBACK + '/';
     }
 
     function checkUrl(url) {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-        const img = new Image();
         let done = false;
 
-        function finish(result) {
-          if (done) return;
-          done = true;
-          clearTimeout(timer);
-          controller.abort();
-          resolve(result);
-        }
-
-        // Use fetch with no-cors to detect network reachability
         fetch(url, {
           method: 'GET',
           signal: controller.signal,
           cache: 'no-store',
           mode: 'no-cors',
-        }).then(() => finish(true)).catch(() => finish(false));
+        }).then(() => {
+          if (!done) {
+            done = true;
+            clearTimeout(timer);
+            resolve(true);
+          }
+        }).catch(() => {
+          if (!done) {
+            done = true;
+            clearTimeout(timer);
+            resolve(false);
+          }
+        });
       });
     }
 
     async function tryMain() {
-      document.getElementById('actions').style.display = 'none';
       retries += 1;
-      setStatus('Проверяем доступность основного сервера... (попытка ' + retries + ')');
+      setStatus('Подключаемся к CRM...');
 
       let reachable = false;
       for (const url of CHECK_URLS) {
@@ -139,16 +139,20 @@
       }
 
       if (retries < MAX_RETRIES) {
-        setStatus('Основной сервер не отвечает, повторная попытка...');
-        setTimeout(tryMain, 1500);
+        setStatus('Повторная попытка...');
+        setTimeout(tryMain, 1000);
         return;
       }
 
-      setStatus('Основный сервер недоступен. Возможны проблемы у провайдера или на стороне Cloudflare. Переключаем на российское зеркало...');
-      setTimeout(goRu, 1000);
+      setStatus('Не удалось подключиться. Попробуйте резервный сервер.');
+      showActions();
     }
 
-    // Start check on load
+    function tryMainManual() {
+      retries = 0;
+      tryMain();
+    }
+
     tryMain();
   </script>
 </body>

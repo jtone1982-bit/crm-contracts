@@ -5,7 +5,7 @@
   "identifier": "ru.tone.crmcontracts",
   "build": {
     "frontendDist": "../src-tauri/fallback-loader",
-    "devUrl": "https://tone-crm.ru",
+    "devUrl": "https://ru.tone-crm.ru:8443",
     "beforeBuildCommand": ""
   },
   "app": {
@@ -26,7 +26,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["nsis", "dmg"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
