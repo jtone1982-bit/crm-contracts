@@ -98,7 +98,6 @@ export async function POST(request: Request) {
       manager_id: minId,
       status: 'На обзвон',
       city_to: project,
-      source: 'chence-webhook',
       notes: tag ? `Тег: ${tag}` : '',
     })
 

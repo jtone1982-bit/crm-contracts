@@ -8,7 +8,15 @@ const STATUS_MARK = 'Забрано'
 // Manager sheets: фамилия → spreadsheet ID
 // Synced with /opt/crm-scripts/chence_to_manager_sheets.py MANAGERS list
 const MANAGER_SHEETS: { name: string; sheetId: string }[] = [
+  { name: 'Зорькина', sheetId: '1339y_T9_mnfyiXHEwpCUa8rhf-OCCIYMgF_eICsxVno' },
+  { name: 'Коротеев', sheetId: '1BMWdEhNAh-H6RCwbu5ryI9Fkpx5eetI6Lbnq7vcoCLY' },
+  { name: 'Духина', sheetId: '1MmhqEy5NoYn8ed7fxeP-Od_OOy66xyZtzLHVGwAQSxA' },
+  { name: 'Тян', sheetId: '1m2QLv5IaE9o2d-38-MYgwyzBsGx8TdN7eA13ArCoogs' },
   { name: 'Карымова', sheetId: '1MUMnGPnWf6aIOnhPF6xRZkj-t9oi90i_ZwoU49O9xbY' },
+  { name: 'Жеребцова', sheetId: '1oObzPpps3l8-8eIfJDnDURO63J421840utPR4yV06nk' },
+  { name: 'Тарасюк', sheetId: '1Y904RUIhMtlCFdWQtJMkcAJwzfD4NwO_FIlxk3udflo' },
+  { name: 'Лаевская', sheetId: '1VxD0fLNKt_TAmjutm1ClhLNzWsv9UuHf46IZJ7mgomc' },
+  { name: 'Абрегова', sheetId: '1YcJGN6Bp_ksb10Ro04HOabexbix5Ghf8NeiR3a8hTtQ' },
   { name: 'Пешкова', sheetId: '1zSlpwmDcji_1CMa7ReAzqcPEtdPRWxVuxxqowmjkHek' },
 ]
 
