@@ -26,6 +26,67 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create Capacitor fallback loader
+        run: |
+          mkdir -p out
+          cat > out/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="ru">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>CRM Контракты</title>
+            <style>
+              * { box-sizing: border-box; }
+              body {
+                margin: 0;
+                padding: 24px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #f5f1ea;
+                color: #2d2520;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                text-align: center;
+              }
+              .loader {
+                width: 48px;
+                height: 48px;
+                border: 4px solid rgba(194,65,12,0.2);
+                border-top-color: #c2410c;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 24px;
+              }
+              @keyframes spin { to { transform: rotate(360deg); } }
+              h1 { font-size: 20px; margin: 0 0 8px; }
+              p { font-size: 14px; color: #5c4d3d; margin: 0 0 24px; }
+              a.button {
+                display: inline-block;
+                padding: 12px 20px;
+                background: #c2410c;
+                color: white;
+                text-decoration: none;
+                border-radius: 10px;
+                font-size: 14px;
+                font-weight: 500;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="loader"></div>
+            <h1>CRM Контракты</h1>
+            <p>Загружаем приложение...</p>
+            <a class="button" href="https://ru.tone-crm.ru:8443">Открыть CRM</a>
+            <script>
+              window.location.replace('https://ru.tone-crm.ru:8443');
+            </script>
+          </body>
+          </html>
+          EOF
+
       - name: Sync Capacitor Android
         run: npx cap sync android
 
