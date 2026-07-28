@@ -5,7 +5,7 @@
   "identifier": "ru.tone.crmcontracts",
   "build": {
     "frontendDist": "../src-tauri/fallback-loader",
-    "devUrl": "https://tone-crm.ru",
+    "devUrl": "https://ru.tone-crm.ru:8443",
     "beforeBuildCommand": ""
   },
   "app": {
