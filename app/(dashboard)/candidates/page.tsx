@@ -2,6 +2,9 @@ import { requireManagerOrAdmin } from '@/lib/guards'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import CandidatesList from '@/components/CandidatesList'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function CandidatesPage({
   searchParams,
 }: {
