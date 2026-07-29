@@ -53,11 +53,30 @@ export default async function CandidatesPage({
     managers = mgrs || []
   }
 
-  const { data: candidates, count } = await query
-    .order('created_at', { ascending: false })
-    .limit(10000)
+  // Supabase PostgREST limits single query to 1000 rows by default.
+  // Fetch candidates in batches using range.
+  const PAGE_SIZE = 1000
+  let allCandidates: any[] = []
+  let from = 0
+  let to = PAGE_SIZE - 1
+  let hasMore = true
 
-  console.log('Candidates fetched:', candidates?.length, 'total count:', count)
+  while (hasMore) {
+    const { data: batch } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to)
+    if (batch && batch.length > 0) {
+      allCandidates = allCandidates.concat(batch)
+      hasMore = batch.length === PAGE_SIZE
+      from += PAGE_SIZE
+      to += PAGE_SIZE
+    } else {
+      hasMore = false
+    }
+  }
+
+  const candidates = allCandidates
+  console.log('Candidates fetched total:', candidates.length)
 
   return (
     <CandidatesList
