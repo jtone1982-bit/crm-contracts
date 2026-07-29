@@ -50,6 +50,11 @@ export default function HelpPage() {
       <p>Нет аккаунта — обратитесь к руководителю.</p>
 
       <h3>1.2. Меню студента</h3>
+      <img
+        src="/screenshots/student-training.png"
+        alt="Меню студента и раздел Обучение"
+        style={{ width: '100%', maxWidth: 800, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 16 }}
+      />
       <p>Студенту доступны разделы:</p>
       <ul>
         <li><strong>Обучение</strong> — прохождение курса и тестов</li>
@@ -114,6 +119,11 @@ export default function HelpPage() {
       </ul>
 
       <h3>2.2. Ежедневный порядок работы</h3>
+      <img
+        src="/screenshots/manager-table.png"
+        alt="Таблица кандидатов менеджера"
+        style={{ width: '100%', maxWidth: 800, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 16 }}
+      />
       <ol>
         <li>Открыть <strong>Кандидаты</strong> → фильтр <strong>На обзвон</strong> / <strong>Сегодня</strong>.</li>
         <li>Позвонить по списку.</li>
@@ -125,6 +135,11 @@ export default function HelpPage() {
       </ol>
 
       <h3>2.3. Звонок кандидату</h3>
+      <img
+        src="/screenshots/candidate-card.png"
+        alt="Карточка кандидата"
+        style={{ width: '100%', maxWidth: 800, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 16 }}
+      />
       <ol>
         <li>Нажать на номер телефона в таблице.</li>
         <li>Откроется карточка кандидата.</li>
