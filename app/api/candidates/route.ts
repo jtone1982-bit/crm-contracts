@@ -41,8 +41,33 @@ export async function GET(request: Request) {
     query = query.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%`)
   }
 
-  const { data, error } = await query.order('created_at', { ascending: false })
+  // Supabase PostgREST limits single query to 1000 rows by default.
+  // Fetch candidates in batches using range.
+  const PAGE_SIZE = 1000
+  let allCandidates: any[] = []
+  let from = 0
+  let to = PAGE_SIZE - 1
+  let hasMore = true
+  let lastError: any = null
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data || [])
+  while (hasMore) {
+    const { data: batch, error: batchError } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to)
+    if (batchError) {
+      lastError = batchError
+      break
+    }
+    if (batch && batch.length > 0) {
+      allCandidates = allCandidates.concat(batch)
+      hasMore = batch.length === PAGE_SIZE
+      from += PAGE_SIZE
+      to += PAGE_SIZE
+    } else {
+      hasMore = false
+    }
+  }
+
+  if (lastError) return NextResponse.json({ error: lastError.message }, { status: 500 })
+  return NextResponse.json(allCandidates || [])
 }
