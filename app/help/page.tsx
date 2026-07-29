@@ -1,6 +1,26 @@
 export default function HelpPage() {
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: 24, fontFamily: 'system-ui, sans-serif', lineHeight: 1.6 }}>
+      <div style={{ marginBottom: 16 }}>
+        <a
+          href="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 12px',
+            background: '#f3f4f6',
+            borderRadius: 8,
+            color: '#111827',
+            textDecoration: 'none',
+            fontSize: 14,
+            fontWeight: 500,
+          }}
+        >
+          ← Назад
+        </a>
+      </div>
+
       <h1>CRM Контракты — инструкция</h1>
 
       <p>
