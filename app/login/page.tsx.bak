@@ -135,7 +135,7 @@ export default async function LoginPage({
             <p className="subtitle">{isSignUp ? 'Регистрация нового менеджера' : 'Вход в систему'}</p>
 
             <div className="fallback">
-              ⚠️ С мобильного интернета CRM может не открываться из-за блокировки оператора. Попробуйте домашний Wi-Fi или VPN. Альтернативный вход:{' '}
+              Если сайт не загружается — попробуйте{' '}
               <a href="https://ru.tone-crm.ru:8443" target="_blank" rel="noreferrer">
                 ru.tone-crm.ru:8443
               </a>
