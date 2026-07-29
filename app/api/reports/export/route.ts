@@ -3,6 +3,22 @@ import { createClient } from '@/lib/supabase-server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import * as XLSX from 'xlsx'
 
+interface ManagerProfile {
+  full_name: string | null
+}
+
+interface CandidateRow {
+  id: string
+  phone: string | null
+  full_name: string | null
+  status: string | null
+  lead_source: string | null
+  city_from: string | null
+  city_to: string | null
+  created_at: string | null
+  manager: ManagerProfile | ManagerProfile[] | null
+}
+
 export async function GET(request: Request) {
   const supabase = await createClient()
   const {
@@ -26,20 +42,42 @@ export async function GET(request: Request) {
   const dateTo = searchParams.get('date_to')
 
   const admin = getSupabaseAdmin()
-  let query = admin
-    .from('candidates')
-    .select('id, phone, full_name, status, lead_source, city_from, city_to, created_at, manager:profiles(full_name)')
+  const PAGE_SIZE = 1000
+  let allCandidates: CandidateRow[] = []
+  let from = 0
+  let to = PAGE_SIZE - 1
+  let hasMore = true
 
-  if (statuses.length > 0) query = query.in('status', statuses)
-  if (sources.length > 0) query = query.in('lead_source', sources)
-  if (managerId) query = query.eq('manager_id', managerId)
-  if (dateFrom) query = query.gte('created_at', dateFrom)
-  if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59')
+  while (hasMore) {
+    let pageQuery = admin
+      .from('candidates')
+      .select('id, phone, full_name, status, lead_source, city_from, city_to, created_at, manager:profiles(full_name)')
 
-  const { data: candidates, error } = await query
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    if (statuses.length > 0) pageQuery = pageQuery.in('status', statuses)
+    if (sources.length > 0) pageQuery = pageQuery.in('lead_source', sources)
+    if (managerId) pageQuery = pageQuery.eq('manager_id', managerId)
+    if (dateFrom) pageQuery = pageQuery.gte('created_at', dateFrom)
+    if (dateTo) pageQuery = pageQuery.lte('created_at', dateTo + 'T23:59:59')
+
+    const { data: batch, error: pageError } = await pageQuery
+      .order('created_at', { ascending: false })
+      .range(from, to)
+
+    if (pageError) {
+      return NextResponse.json({ error: pageError.message }, { status: 500 })
+    }
+
+    if (batch && batch.length > 0) {
+      allCandidates = allCandidates.concat(batch)
+      hasMore = batch.length === PAGE_SIZE
+      from += PAGE_SIZE
+      to += PAGE_SIZE
+    } else {
+      hasMore = false
+    }
   }
+
+  const candidates = allCandidates
 
   const total = candidates?.length || 0
 
@@ -56,11 +94,14 @@ export async function GET(request: Request) {
     const src = c.lead_source || '—'
     if (src !== '—') sourceMap.set(src, (sourceMap.get(src) || 0) + 1)
 
-    const mgrName = Array.isArray(c.manager) ? (c.manager as any[])[0]?.full_name : (c.manager as any)?.full_name
-    const mgrKey = (mgrName as string) || '—'
-    const mgr = managerMap.get(mgrKey) || { name: mgrKey, count: 0 }
-    mgr.count++
-    managerMap.set(mgrKey, mgr)
+    const mgr = c.manager
+    const mgrName = Array.isArray(mgr)
+      ? mgr[0]?.full_name ?? null
+      : mgr?.full_name ?? null
+    const mgrKey = mgrName || '—'
+    const mgrEntry = managerMap.get(mgrKey) || { name: mgrKey, count: 0 }
+    mgrEntry.count++
+    managerMap.set(mgrKey, mgrEntry)
 
     if (src !== '—') {
       const crossKey = `${st}||${src}`
@@ -122,7 +163,7 @@ export async function GET(request: Request) {
     'Источник': c.lead_source || '',
     'Откуда': c.city_from || '',
     'Куда': c.city_to || '',
-    'Менеджер': Array.isArray(c.manager) ? (c.manager as any[])[0]?.full_name || '' : (c.manager as any)?.full_name || '',
+    'Менеджер': Array.isArray(c.manager) ? (c.manager)[0]?.full_name || '' : c.manager?.full_name || '',
     'Дата создания': c.created_at,
   })) || []
   const ws3 = XLSX.utils.json_to_sheet(detailRows)
