@@ -53,7 +53,11 @@ export default async function CandidatesPage({
     managers = mgrs || []
   }
 
-  const { data: candidates } = await query.order('created_at', { ascending: false })
+  const { data: candidates, count } = await query
+    .order('created_at', { ascending: false })
+    .limit(10000)
+
+  console.log('Candidates fetched:', candidates?.length, 'total count:', count)
 
   return (
     <CandidatesList
