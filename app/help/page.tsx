@@ -28,9 +28,12 @@ export default function HelpPage() {
         <a href="https://tone-crm.ru" target="_blank" rel="noreferrer">https://tone-crm.ru</a>
       </p>
       <p>
-        <strong>Резервный адрес:</strong>{' '}
-        <a href="https://ru.tone-crm.ru:8443" target="_blank" rel="noreferrer">https://ru.tone-crm.ru:8443</a>
+        <strong>Резервные адреса:</strong>
       </p>
+      <ul>
+        <li><a href="https://ru.tone-crm.ru" target="_blank" rel="noreferrer">https://ru.tone-crm.ru</a></li>
+        <li><a href="https://ru.tone-crm.ru:8443" target="_blank" rel="noreferrer">https://ru.tone-crm.ru:8443</a></li>
+      </ul>
       <p style={{ background: '#fff7ed', borderLeft: '4px solid #f97316', padding: 12 }}>
         <strong>Важно:</strong> С мобильного интернета CRM может не открываться из-за блокировки оператора.
         Используйте домашний Wi-Fi или VPN.
@@ -47,6 +50,7 @@ export default function HelpPage() {
       <p>Нет аккаунта — обратитесь к руководителю.</p>
 
       <h3>1.2. Меню студента</h3>
+      <p>Студенту доступны разделы:</p>
       <ul>
         <li><strong>Обучение</strong> — прохождение курса и тестов</li>
         <li><strong>Профиль</strong> — личные данные и результаты</li>
@@ -80,12 +84,19 @@ export default function HelpPage() {
         <li>Сохраняется лучший результат.</li>
       </ul>
 
-      <h3>1.6. Правила для студента</h3>
+      <h3>1.6. Финальный экзамен</h3>
+      <ul>
+        <li>Финальный экзамен открывается только после прохождения всех обычных модулей.</li>
+        <li>Если модули не сданы — кнопка финального экзамена недоступна.</li>
+        <li>После сдачи обучение считается завершённым.</li>
+      </ul>
+
+      <h3>1.7. Правила для студента</h3>
       <ul>
         <li>Проходите обучение по порядку.</li>
-        <li>Не передавайте логин и пароль другим.</li>
+        <li>Не передавайте логин и пароль.</li>
         <li>Если вопрос непонятен — перечитайте теорию или спросите руководителя.</li>
-        <li>После завершения обучения дождитесь назначения роли менеджера.</li>
+        <li>После завершения дождитесь назначения роли менеджера.</li>
       </ul>
 
       <h2>2. Менеджер</h2>
@@ -116,10 +127,21 @@ export default function HelpPage() {
       <h3>2.3. Звонок кандидату</h3>
       <ol>
         <li>Нажать на номер телефона в таблице.</li>
-        <li>В карточке нажать кнопку 📞.</li>
-        <li>Позвонить через телефон или мессенджер.</li>
-        <li>После звонка сменить статус и написать комментарий.</li>
+        <li>Откроется карточка кандидата.</li>
+        <li>Рядом с номером есть кнопка 📞.</li>
+        <li>Нажмите 📞 — откроется меню выбора способа связи:
+          <ul>
+            <li>Позвонить по телефону</li>
+            <li>Написать в Telegram</li>
+            <li>Написать в WhatsApp</li>
+          </ul>
+        </li>
+        <li>Выберите нужный способ связи.</li>
+        <li>После разговора запишите результат в комментарий.</li>
       </ol>
+      <p style={{ background: '#fff7ed', borderLeft: '4px solid #f97316', padding: 12 }}>
+        <strong>Важно:</strong> кнопка 📞 не звонит сама по себе. Она открывает меню выбора: телефон / Telegram / WhatsApp.
+      </p>
 
       <h3>2.4. Статусы кандидатов</h3>
       <table style={{ borderCollapse: 'collapse', width: '100%' }}>
@@ -166,7 +188,7 @@ export default function HelpPage() {
         <tbody>
           <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>CRM не грузится на iPhone</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Подключиться к домашнему Wi-Fi</td></tr>
           <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Не работает мобильный интернет</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Включить VPN</td></tr>
-          <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Основной адрес не открывается</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Попробовать <a href="https://ru.tone-crm.ru:8443">https://ru.tone-crm.ru:8443</a></td></tr>
+          <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Основной адрес не открывается</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Попробовать <a href="https://ru.tone-crm.ru">ru.tone-crm.ru</a> или <a href="https://ru.tone-crm.ru:8443">ru.tone-crm.ru:8443</a></td></tr>
         </tbody>
       </table>
 
@@ -179,13 +201,14 @@ export default function HelpPage() {
           </tr>
         </thead>
         <tbody>
-          <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Не загружается сайт</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Попробовать резервный адрес, Wi-Fi или VPN</td></tr>
+          <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Не загружается сайт</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Попробовать ru.tone-crm.ru, ru.tone-crm.ru:8443, Wi-Fi или VPN</td></tr>
           <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Забыл пароль</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Обратиться к руководителю</td></tr>
           <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Не открывается тест</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Проверить интернет, перезагрузить страницу</td></tr>
-          <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Тест не отправляется</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Убедитесь, что ответили на все вопросы</td></tr>
+          <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Тест не отправляется</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Убедиться, что ответили на все вопросы</td></tr>
           <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Нет доступа к кандидатам</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Возможно, у вас роль студента. Дождитесь назначения менеджера</td></tr>
           <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Не сохраняется карточка</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Проверить интернет, перезагрузить страницу</td></tr>
           <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Не открывается документ</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Проверить формат и размер файла</td></tr>
+          <tr><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Кнопка 📞 не звонит</td><td style={{ border: '1px solid #d1d5db', padding: 8 }}>Она открывает меню выбора: телефон / Telegram / WhatsApp</td></tr>
         </tbody>
       </table>
 
