@@ -47,12 +47,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ] : []),
     ...(profile.role !== 'student' ? [{ href: '/direction-picker', label: 'Подбор направления' }] : []),
     { href: '/tools', label: 'Инструменты' },
+    { href: '/help', label: 'Памятка' },
   ]
 
   const navLinks = isStudent
     ? [
         { href: '/training', label: 'Обучение' },
         { href: '/profile', label: 'Профиль' },
+        { href: '/help', label: 'Памятка' },
       ]
     : allNavLinks
 
