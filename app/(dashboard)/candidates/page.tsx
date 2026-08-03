@@ -1,30 +1,44 @@
 import { requireManagerOrAdmin } from '@/lib/guards'
-import { getSupabaseAdmin } from '@/lib/supabase'
-import CandidatesList from '@/components/CandidatesList'
-
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+import CandidatesPageClient from '@/components/CandidatesPageClient'
 
 export default async function CandidatesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; department_id?: string; manager_id?: string; source?: string }>
+  searchParams?: { [key: string]: string | string[] | undefined }
 }) {
-  const params = await searchParams
-  const { status, department_id, manager_id, source } = params
+  await requireManagerOrAdmin()
 
-  const { supabase, user, profile } = await requireManagerOrAdmin()
+  // Get params from URL
+  const status = typeof searchParams?.status === 'string' ? searchParams.status : undefined
+  const source = typeof searchParams?.source === 'string' ? searchParams.source : undefined
+  const manager_id = typeof searchParams?.manager_id === 'string' ? searchParams.manager_id : undefined
+  const view = typeof searchParams?.view === 'string' ? searchParams.view : undefined
+  const pageSize = typeof searchParams?.page_size === 'string' ? parseInt(searchParams.page_size) || 50 : 50
+  const page = typeof searchParams?.page === 'string' ? parseInt(searchParams.page) || 1 : 1
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, id')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = profile?.role === 'admin'
   const managerId = user.id
-  const role = profile.role
-  const isAdmin = role === 'admin'
 
   let query = supabase.from('candidates').select(
-    'id, phone, full_name, city_from, city_to, lead_source, next_contact_date, telegram_username, whatsapp_number, max_contact, status, manager_id, manager:profiles(full_name)'
+    'id, phone, full_name, city_from, city_to, lead_source, next_contact_date, telegram_username, whatsapp_number, max_contact, status, manager_id, manager:profiles(full_name)',
+    { count: 'exact' }
   )
-  if (role === 'manager') {
+
+  if (!isAdmin) {
     query = query.eq('manager_id', managerId)
   }
+
   if (status) {
     query = query.eq('status', status)
   }
@@ -36,6 +50,14 @@ export default async function CandidatesPage({
   if (isAdmin && manager_id) {
     query = query.eq('manager_id', manager_id)
   }
+
+  // Pagination
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data: candidates, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to)
 
   let leadSources: string[] = []
   let managers: { id: string; full_name: string | null; role: string }[] = []
@@ -56,33 +78,12 @@ export default async function CandidatesPage({
     managers = mgrs || []
   }
 
-  // Supabase PostgREST limits single query to 1000 rows by default.
-  // Fetch candidates in batches using range.
-  const PAGE_SIZE = 1000
-  let allCandidates: any[] = []
-  let from = 0
-  let to = PAGE_SIZE - 1
-  let hasMore = true
-
-  while (hasMore) {
-    const { data: batch } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to)
-    if (batch && batch.length > 0) {
-      allCandidates = allCandidates.concat(batch)
-      hasMore = batch.length === PAGE_SIZE
-      from += PAGE_SIZE
-      to += PAGE_SIZE
-    } else {
-      hasMore = false
-    }
-  }
-
-  const candidates = allCandidates
-  console.log('Candidates fetched total:', candidates.length)
+  const defaultView = (view as 'list' | 'kanban' | 'split') || 'list'
+  const totalCount = count || 0
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   return (
-    <CandidatesList
+    <CandidatesPageClient
       candidates={candidates || []}
       statusFilter={status}
       isAdmin={isAdmin}
@@ -90,6 +91,11 @@ export default async function CandidatesPage({
       activeSource={source}
       managers={managers}
       activeManagerId={manager_id}
+      defaultView={defaultView}
+      currentPage={page}
+      totalPages={totalPages}
+      totalCount={totalCount}
+      pageSize={pageSize}
     />
   )
 }

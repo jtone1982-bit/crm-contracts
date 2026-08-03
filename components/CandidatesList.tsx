@@ -35,9 +35,15 @@ interface CandidatesListProps {
   activeSource?: string
   managers?: Manager[]
   activeManagerId?: string
+  currentPage?: number
+  totalPages?: number
+  totalCount?: number
+  pageSize?: number
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (size: number) => void
 }
 
-export default function CandidatesList({ candidates, statusFilter, isAdmin, leadSources, activeSource, managers, activeManagerId }: CandidatesListProps) {
+export default function CandidatesList({ candidates, statusFilter, isAdmin, leadSources, activeSource, managers, activeManagerId, currentPage = 1, totalPages = 1, totalCount = 0, pageSize = 50, onPageChange, onPageSizeChange }: CandidatesListProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [transferManagerId, setTransferManagerId] = useState<string>('')
@@ -158,15 +164,15 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
       <CandidateModal candidateId={selectedId} onClose={() => setSelectedId(null)} statuses={PIPELINE_STATUSES.slice()} />
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#2d2520' }}>{statusFilter ? statusFilter : 'Все кандидаты'}</h1>
-        <a href="/" className="hover:underline" style={{ color: '#c2410c' }}>← Назад</a>
+        <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#f7f8f8' }}>{statusFilter ? statusFilter : 'Все кандидаты'}</h1>
+        <a href="/" className="hover:underline" style={{ color: '#5e6ad2' }}>← Назад</a>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 bg-[#fefdfb] border rounded-xl p-3" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
-        <span className="text-sm font-medium" style={{ color: '#2d2520' }}>Выбрано: {selectedIds.size}</span>
+      <div className="flex flex-wrap items-center gap-3 bg-[#191a1b] border rounded-xl p-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <span className="text-sm font-medium" style={{ color: '#f7f8f8' }}>Выбрано: {selectedIds.size}</span>
         <select
           className="text-sm border rounded-lg px-2 py-1"
-          style={{ borderColor: 'rgba(60,50,40,0.12)' }}
+          style={{ borderColor: 'rgba(255,255,255,0.1)' }}
           value={transferManagerId}
           onChange={(e) => setTransferManagerId(e.target.value)}
           disabled={!managers || managers.length === 0}
@@ -182,18 +188,18 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
           onClick={handleTransfer}
           disabled={transferLoading || selectedIds.size === 0 || !transferManagerId}
           className="text-sm px-4 py-1.5 rounded-lg text-white disabled:opacity-50"
-          style={{ background: '#c2410c' }}
+          style={{ background: '#5e6ad2' }}
         >
           {transferLoading ? 'Перенос...' : 'Перенести выбранных'}
         </button>
       </div>
 
       {(isAdmin || (managers?.length || 0) > 1) && (
-        <div className="flex flex-wrap items-center gap-3 bg-[#fefdfb] border rounded-xl p-3" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
-          <span className="text-sm font-medium" style={{ color: '#2d2520' }}>Перенести всех от менеджера:</span>
+        <div className="flex flex-wrap items-center gap-3 bg-[#191a1b] border rounded-xl p-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <span className="text-sm font-medium" style={{ color: '#f7f8f8' }}>Перенести всех от менеджера:</span>
           <select
             className="text-sm border rounded-lg px-2 py-1"
-            style={{ borderColor: 'rgba(60,50,40,0.12)' }}
+            style={{ borderColor: 'rgba(255,255,255,0.1)' }}
             value={bulkFromManagerId}
             onChange={(e) => setBulkFromManagerId(e.target.value)}
           >
@@ -207,7 +213,7 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
           <span className="text-sm" style={{ color: '#6b5d50' }}>→</span>
           <select
             className="text-sm border rounded-lg px-2 py-1"
-            style={{ borderColor: 'rgba(60,50,40,0.12)' }}
+            style={{ borderColor: 'rgba(255,255,255,0.1)' }}
             value={bulkToManagerId}
             onChange={(e) => setBulkToManagerId(e.target.value)}
           >
@@ -222,7 +228,7 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
             onClick={handleBulkTransfer}
             disabled={transferLoading || !bulkFromManagerId || !bulkToManagerId || bulkFromManagerId === bulkToManagerId}
             className="text-sm px-4 py-1.5 rounded-lg text-white disabled:opacity-50"
-            style={{ background: '#c2410c' }}
+            style={{ background: '#5e6ad2' }}
           >
             {transferLoading ? 'Перенос...' : 'Перенести всех'}
           </button>
@@ -232,13 +238,13 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
       {transferMessage && <span className="text-sm" style={{ color: transferMessage.includes('Ошибка') ? '#dc2626' : '#16a34a' }}>{transferMessage}</span>}
 
       <div className="flex flex-wrap gap-2">
-        <Link href="/candidates" className="px-3 py-1 text-sm border rounded-full hover:shadow-sm transition no-underline" style={{ borderColor: 'rgba(60,50,40,0.12)', color: '#6b5d50', background: '#fefdfb' }}>Все</Link>
+        <Link href="/candidates" className="px-3 py-1 text-sm border rounded-full hover:shadow-sm transition no-underline" style={{ borderColor: 'rgba(255,255,255,0.1)', color: '#6b5d50', background: '#191a1b' }}>Все</Link>
         {PIPELINE_STATUSES.map((status) => (
           <Link
             key={status}
             href={`/candidates?status=${encodeURIComponent(status)}`}
             className="px-3 py-1 text-sm border rounded-full hover:shadow-sm transition no-underline"
-            style={statusFilter === status ? { background: '#c2410c', color: 'white', borderColor: '#c2410c' } : { borderColor: 'rgba(60,50,40,0.12)', color: '#6b5d50', background: '#fefdfb' }}
+            style={statusFilter === status ? { background: '#5e6ad2', color: 'white', borderColor: '#5e6ad2' } : { borderColor: 'rgba(255,255,255,0.1)', color: '#6b5d50', background: '#191a1b' }}
           >
             {status}
           </Link>
@@ -301,9 +307,9 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
         </div>
       )}
 
-      <div className="bg-[#fefdfb] border rounded-xl overflow-x-auto hidden md:block" style={{ borderColor: 'rgba(60,50,40,0.08)' }}>
+      <div className="bg-[#191a1b] border rounded-xl overflow-x-auto hidden md:block" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         <table className="w-full min-w-[600px]">
-          <thead className="text-left text-sm" style={{ background: 'rgba(240,235,227,0.6)' }}>
+          <thead className="text-left text-sm" style={{ background: 'rgba(255,255,255,0.03)' }}>
             <tr>
               <th className="p-3">
                 <input
@@ -338,7 +344,7 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
                     <button
                       onClick={() => setSelectedId(c.id)}
                       className="hover:underline text-left font-semibold"
-                      style={{ color: '#2d2520' }}
+                      style={{ color: '#f7f8f8' }}
                     >
                       {c.phone}
                     </button>
@@ -351,7 +357,7 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
                       <button
                         type="button"
                         className="p-1 rounded transition hover:shadow-sm"
-                        style={{ color: '#a89a8c' }}
+                        style={{ color: '#5c6168' }}
                         aria-label="Действия с номером"
                       >
                         📞
@@ -376,8 +382,8 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
           <div
             key={c.id}
             onClick={() => setSelectedId(c.id)}
-            className="block w-full text-left bg-[#fefdfb] border rounded-xl p-4 hover:shadow-md transition cursor-pointer no-underline"
-            style={{ borderColor: 'rgba(60,50,40,0.08)' }}
+            className="block w-full text-left bg-[#191a1b] border rounded-xl p-4 hover:shadow-md transition cursor-pointer no-underline"
+            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
             role="button"
           >
             <div className="flex items-center justify-between">
@@ -385,7 +391,7 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
                 <button
                   type="button"
                   className="font-semibold"
-                  style={{ color: '#2d2520' }}
+                  style={{ color: '#f7f8f8' }}
                   onClick={(e) => {
                     e.stopPropagation()
                     setSelectedId(c.id)
@@ -402,28 +408,70 @@ export default function CandidatesList({ candidates, statusFilter, isAdmin, lead
                   <button
                     type="button"
                     className="p-1 rounded transition hover:shadow-sm"
-                    style={{ color: '#a89a8c' }}
+                    style={{ color: '#5c6168' }}
                     aria-label="Действия с номером"
                   >
                     📞
                   </button>
                 </PhoneActionsMenu>
               </div>
-              <span className="text-xs" style={{ color: '#a89a8c' }}>{c.next_contact_date || '—'}</span>
+              <span className="text-xs" style={{ color: '#5c6168' }}>{c.next_contact_date || '—'}</span>
             </div>
-            <div className="mt-2 text-sm" style={{ color: '#2d2520' }}>{c.full_name || '—'}</div>
+            <div className="mt-2 text-sm" style={{ color: '#f7f8f8' }}>{c.full_name || '—'}</div>
             <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: '#6b5d50' }}>
               <span>{c.city_from || '—'} → {c.city_to || '—'}</span>
             </div>
             {getManagerName(c) !== '—' && (
-              <div className="mt-1 text-xs" style={{ color: '#a89a8c' }}>Менеджер: {getManagerName(c)}</div>
+              <div className="mt-1 text-xs" style={{ color: '#5c6168' }}>Менеджер: {getManagerName(c)}</div>
             )}
           </div>
         ))}
       </div>
 
       {(!candidates || candidates.length === 0) && (
-        <div className="p-8 text-center" style={{ color: '#a89a8c' }}>Нет кандидатов</div>
+        <div className="p-8 text-center" style={{ color: '#5c6168' }}>Нет кандидатов</div>
+      )}
+
+      {/* Pagination */}
+      {(totalPages > 1 || totalCount > pageSize) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t mt-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: '#5c6168' }}>Строк на странице:</span>
+            {[50, 100, 200].map((size) => (
+              <button
+                key={size}
+                onClick={() => onPageSizeChange && onPageSizeChange(size)}
+                className={`text-xs px-2 py-1 rounded-full border transition ${pageSize === size ? 'text-white' : ''}`}
+                style={pageSize === size ? { background: '#5e6ad2', borderColor: '#5e6ad2' } : { background: '#0f1011', borderColor: 'rgba(255,255,255,0.1)', color: '#8a8f98' }}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+
+          <div className="text-xs" style={{ color: '#5c6168' }}>
+            {totalCount} всего · стр. {currentPage} из {totalPages}
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onPageChange && onPageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="px-3 py-1.5 text-xs rounded-lg border transition disabled:opacity-30"
+              style={{ background: '#0f1011', borderColor: 'rgba(255,255,255,0.1)', color: '#8a8f98' }}
+            >
+              ← Назад
+            </button>
+            <button
+              onClick={() => onPageChange && onPageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className="px-3 py-1.5 text-xs rounded-lg border transition disabled:opacity-30"
+              style={{ background: '#0f1011', borderColor: 'rgba(255,255,255,0.1)', color: '#8a8f98' }}
+            >
+              Вперёд →
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
