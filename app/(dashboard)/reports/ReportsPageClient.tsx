@@ -29,7 +29,7 @@ export default function ReportsPageClient() {
   const [sources, setSources] = useState<string[]>([])
   const [managers, setManagers] = useState<Manager[]>([])
 
-  const ALL_SOURCES = ['ГКСштб8', 'ЗЩТ1', 'Регионы', 'НН', 'ККС', 'МСКп', 'КН']
+  const ALL_SOURCES = ['ГКСштб8', 'ЗЩТ1', 'Регионы', 'НН', 'ККС', 'МСКп', 'КН', 'Загружено из Excel']
 
   useEffect(() => {
     fetch('/api/admin/managers-list')
